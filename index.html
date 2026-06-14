@@ -614,6 +614,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
         </div>
         <button class="btn" id="hs-gen-btn" style="margin-top:6px;">⟳ Suggest Progression</button>
         <button class="btn amb" id="hs-shuf-btn" style="margin-top:4px;">⚄ Shuffle Rhythms</button>
+        <button class="btn" id="hs-rewind-btn" style="margin-top:4px;">⏮ Rewind</button>
         <div style="font-size:9px;color:var(--tdim);line-height:1.5;margin-top:6px;border-top:1px solid var(--border);padding-top:6px;"><b style="color:var(--tmid);">Left-click</b> slot = open chord picker.<br><b style="color:var(--tmid);">Right-click</b> slot = clear it.<br><b style="color:var(--accent2);">Click chord name</b> in picker = preview sound.</div>
       </div>
     </div>
@@ -1268,36 +1269,50 @@ const GM_DEFAULTS=[
 ];
 const VEL_MAP={1:40,2:80,3:120};
 const p04={
-  rows:null,playStep:0,maxSteps:12,
+  rows:null,playStep:0,maxSteps:12,tick32:0,
+  // subdivision options: divisor against 32nd-note master clock
+  // 32=whole,16=half,8=quarter,4=eighth,2=16th,1=32nd
+  _SUBDIVS:[[8,'Quarter'],[4,'8th'],[2,'16th'],[1,'32nd']],
   init(){
-    if(!this.rows)this.rows=GM_DEFAULTS.map(d=>({name:d.name,note:d.note,ch:d.ch,steps:new Uint8Array(24).fill(0),stepCount:12,muted:false,solo:false}));
-    this.playStep=0;this.maxSteps=Math.max(...this.rows.map(r=>r.stepCount));
+    if(!this.rows)this.rows=GM_DEFAULTS.map(d=>({name:d.name,note:d.note,ch:d.ch,steps:new Uint8Array(32).fill(0),stepCount:16,subdiv:8,tickAcc:0,muted:false,solo:false}));
+    this.playStep=0;this.tick32=0;
+    this.maxSteps=Math.max(...this.rows.map(r=>r.stepCount));
     setCounter('01','Step');this.renderGrid();
   },
   step(){
+    this.tick32++;
     const hasSolo=this.rows.some(r=>r.solo);
     this.rows.forEach((row,ri)=>{
       if(row.muted||(hasSolo&&!row.solo))return;
-      const s=this.playStep%row.stepCount,vel=row.steps[s];
+      // each row advances on its own subdivision
+      row.tickAcc=(row.tickAcc||0)+1;
+      if(row.tickAcc<(row.subdiv||8))return;
+      row.tickAcc=0;
+      const s=(row._step||0)%row.stepCount;
+      row._step=(row._step||0)+1;
+      const vel=row.steps[s];
       if(vel>0){
         const v=VEL_MAP[vel]||120,len=parseInt(document.getElementById('len-sl').value);
         if(midiOut){midiOut.send([0x90|row.ch,row.note,v]);setTimeout(()=>{if(midiOut)midiOut.send([0x80|row.ch,row.note,0]);},len);}
+        if(audioEnabled){ensureAudio();playSynth(row.note,v);}
+        _flashMidiDot();
         const el=document.querySelector(`.dstep[data-row="${ri}"][data-step="${s}"]`);
         if(el){el.style.boxShadow='0 0 8px var(--accent3)';setTimeout(()=>{el.style.boxShadow='';},80);}
       }
     });
-    this.maxSteps=Math.max(...this.rows.map(r=>r.stepCount));
-    this.playStep=(this.playStep+1)%this.maxSteps;
-    setCounter(String(this.playStep+1).padStart(2,'0'),'Step');
-    document.getElementById('m-dstep').textContent=this.playStep+1;
-    document.getElementById('m-dmax').textContent=this.maxSteps;
+    // Use row 0 as the display step reference
+    const ref=this.rows[0];
+    const displayStep=((ref?._step||1)-1)%( ref?.stepCount||16);
+    setCounter(String(displayStep+1).padStart(2,'0'),'Step');
+    document.getElementById('m-dstep').textContent=displayStep+1;
+    document.getElementById('m-dmax').textContent=ref?.stepCount||16;
     this._updatePlayhead();
   },
   _updatePlayhead(){
     document.querySelectorAll('.dstep').forEach(el=>{
       const ri=parseInt(el.dataset.row),si=parseInt(el.dataset.step);
       const row=this.rows[ri];if(!row)return;
-      const cur=(this.playStep-1+this.maxSteps)%this.maxSteps%row.stepCount;
+      const cur=((row._step||1)-1)%row.stepCount;
       el.classList.toggle('cur',si===cur);
     });
   },
@@ -1318,9 +1333,15 @@ const p04={
       sb.addEventListener('mousedown',e=>{e.stopPropagation();row.solo=!row.solo;sb.className='drum-mute'+(row.solo?' solo':'');});
       ctrl.appendChild(sb);
       const scl=document.createElement('span');scl.style.cssText='font-size:8px;color:var(--tdim);margin-left:2px;';scl.textContent='n';ctrl.appendChild(scl);
-      const sci=document.createElement('input');sci.type='number';sci.min=1;sci.max=24;sci.value=row.stepCount;sci.style.cssText='width:30px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
-      sci.addEventListener('change',()=>{row.stepCount=Math.max(1,Math.min(24,parseInt(sci.value)||12));sci.value=row.stepCount;this.maxSteps=Math.max(...this.rows.map(r=>r.stepCount));this.renderGrid();});
-      ctrl.appendChild(sci);rowEl.appendChild(ctrl);
+      const sci=document.createElement('input');sci.type='number';sci.min=1;sci.max=32;sci.value=row.stepCount;sci.style.cssText='width:30px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
+      sci.addEventListener('change',()=>{row.stepCount=Math.max(1,Math.min(32,parseInt(sci.value)||16));sci.value=row.stepCount;this.renderGrid();});
+      ctrl.appendChild(sci);
+      // Subdivision selector
+      const sdl=document.createElement('span');sdl.style.cssText='font-size:8px;color:var(--tdim);';sdl.textContent='÷';ctrl.appendChild(sdl);
+      const sds=document.createElement('select');sds.style.cssText='background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:1px 2px;';
+      this._SUBDIVS.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===(row.subdiv||8))o.selected=true;sds.appendChild(o);});
+      sds.addEventListener('change',()=>{row.subdiv=parseInt(sds.value);row.tickAcc=0;});
+      ctrl.appendChild(sds);rowEl.appendChild(ctrl);
       const stepsEl=document.createElement('div');stepsEl.className='drum-steps';
       for(let si=0;si<row.stepCount;si++){
         // beat group marker: thin separator before steps 4, 8, 12, 16...
@@ -1370,7 +1391,7 @@ const p04={
   hide(){if(canvas)canvas.style.display='block';const g=document.getElementById('drum-grid');if(g)g.style.display='none';},
   onDown(){},onMove(){},onUp(){},
   randomize(){this.rows.forEach(r=>{for(let i=0;i<r.stepCount;i++){const x=Math.random();r.steps[i]=x<0.25?3:(x<0.4?2:(x<0.5?1:0));}});this.renderGrid();},
-  clear(){this.rows.forEach(r=>{r.steps.fill(0);});this.playStep=0;midiAllOff();this.renderGrid();},
+  clear(){this.rows.forEach(r=>{r.steps.fill(0);r._step=0;r.tickAcc=0;});this.playStep=0;this.tick32=0;midiAllOff();this.renderGrid();},
 };
 
 // ═══ PROGRAM 05 — MULTI-GRID ══════════════════════════════════════════════
@@ -3028,6 +3049,12 @@ const p09={
     this.draw();
   },
 
+  rewind(){
+    this.playStep=0;this.slotTick=0;this.tick32=0;
+    this._releaseActive();this._prevVoicing=null;
+    this.draw();
+  },
+
   shuffleRhythms(){
     // Musically sensible durations in ticks (32 ticks = 1 bar)
     const durs=[16,24,32,32,32,48,64]; // half, dotted-half, whole(x3), dotted-whole, 2-bar
@@ -3041,7 +3068,7 @@ const p09={
     ctx.fillStyle='#060604';ctx.fillRect(0,0,W,H);
     if(!this.slots.length)return;
     const totalDur=this.slots.reduce((s,sl)=>s+(sl.duration||32),0)||this.numSlots*32;
-    const curStep=(this.playStep===0?this.numSlots:this.playStep)-1;
+    const curStep=this.playStep; // slot currently being played (fires on entry)
     let xCursor=0;
 
     for(let i=0;i<this.numSlots;i++){
@@ -3359,8 +3386,18 @@ const p10={
     const rootMidi=this._degreeToMidi(ch._deg??0,baseOct);
     const ivs=this._TYPES[nextType][0];
     ch.notes=ivs.map(iv=>Math.max(0,Math.min(127,rootMidi+iv)));
-    ch.quality=nextType;ch.name=ch.notes.map(n=>NOTE_NAMES[n%12]).join('-');
+    ch.quality=nextType;
+    ch.name=ch.notes.map(n=>NOTE_NAMES[n%12]).join('-');
+    // Update Roman numeral to reflect new quality
+    const baseRoman=this._baseRoman(ch.roman); // strip old suffix
+    const suffix={maj:'',min:'',dim:'°',aug:'+',maj7:'maj7',min7:'7',dom7:'7',min7b5:'ø7',dim7:'°7',dom9:'9',maj9:'maj9',min9:'9',sus2:'sus2',sus4:'sus4',aug7:'aug7'}[nextType]??'';
+    ch.roman=baseRoman+suffix;
     this.draw();
+  },
+
+  // Strip quality suffix from Roman numeral to get base (I, ii, V, etc)
+  _baseRoman(roman){
+    return roman.replace(/(maj7|maj9|min7|min9|ø7|°7|aug7|sus2|sus4|°|\+|7|9)$/,'');
   },
 
   _playChord(i){
@@ -3485,16 +3522,16 @@ const p10={
 //               showErase, showTrig, showRand, showStep, showRail, showNoteMap }
 // To remove a mode: delete its entry from MODES and its launcher button from HTML.
 const MODES = {
-  1: { id:1, label:'Conway',         obj:null, usesCanvas:true,  showRhythm:true,  showErase:false, showTrig:true,  showRand:true,  showStep:true,  showRail:true,  showNoteMap:true,  showCounter:true,  tickInterval:()=>tick32Ms() },
-  2: { id:2, label:'Step Seq',       obj:null, usesCanvas:true,  showRhythm:true,  showErase:true,  showTrig:false, showRand:false, showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  tickInterval:()=>tick32Ms() },
-  3: { id:3, label:'Euclidean',      obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  tickInterval:()=>tick32Ms() },
-  4: { id:4, label:'Drums',          obj:null, usesCanvas:false, showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:false, showNoteMap:false, showCounter:true,  tickInterval:()=>(60000/bpm)*clockDiv },
-  5: { id:5, label:'Multi-Grid',     obj:null, usesCanvas:false, showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:false, showNoteMap:false, showCounter:false, tickInterval:()=>tick32Ms() },
-  6: { id:6, label:'Signal Flow',    obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  tickInterval:()=>tick32Ms() },
-  7: { id:7, label:'Poly Weaver',    obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  tickInterval:()=>tick32Ms() },
-  8: { id:8, label:'Drunk Walk',     obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:false, tickInterval:()=>tick32Ms() },
-  9: { id:9, label:'Harm. Seq',      obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:false, showNoteMap:true,  showCounter:false, tickInterval:()=>tick32Ms() },
-  10:{ id:10,label:'Chord Forge',    obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:false, showStep:false, showRail:false, showNoteMap:true,  showCounter:false, tickInterval:()=>tick32Ms() },
+  1: { id:1, label:'Conway',         obj:null, usesCanvas:true,  showRhythm:true,  showErase:false, showTrig:true,  showRand:true,  showStep:true,  showRail:true,  showNoteMap:true,  showCounter:true,  showGrid:true,  tickInterval:()=>tick32Ms() },
+  2: { id:2, label:'Step Seq',       obj:null, usesCanvas:true,  showRhythm:true,  showErase:true,  showTrig:false, showRand:false, showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  showGrid:true,  tickInterval:()=>tick32Ms() },
+  3: { id:3, label:'Euclidean',      obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  showGrid:true,  tickInterval:()=>tick32Ms() },
+  4: { id:4, label:'Drums',          obj:null, usesCanvas:false, showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:false, showNoteMap:false, showCounter:true,  showGrid:false, tickInterval:()=>tick32Ms() },
+  5: { id:5, label:'Multi-Grid',     obj:null, usesCanvas:false, showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:false, showNoteMap:false, showCounter:false, showGrid:false, tickInterval:()=>tick32Ms() },
+  6: { id:6, label:'Signal Flow',    obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  showGrid:false, tickInterval:()=>tick32Ms() },
+  7: { id:7, label:'Poly Weaver',    obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  showGrid:false, tickInterval:()=>tick32Ms() },
+  8: { id:8, label:'Drunk Walk',     obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:false, showGrid:false, tickInterval:()=>tick32Ms() },
+  9: { id:9, label:'Harm. Seq',      obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:false, showNoteMap:true,  showCounter:false, showGrid:false, tickInterval:()=>tick32Ms() },
+  10:{ id:10,label:'Chord Forge',    obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:false, showStep:false, showRail:false, showNoteMap:true,  showCounter:false, showGrid:false, tickInterval:()=>tick32Ms() },
 };
 // Wire obj refs after objects are defined (called at boot)
 function initRegistry(){
@@ -3599,6 +3636,9 @@ function _doSwitchProg(n, skipInit=false){
   // transport buttons
   document.getElementById('btn-step').style.display=m.showStep?'':'none';
   document.getElementById('btn-rand').style.display=m.showRand?'':'none';
+  // grid size pane
+  const gridPane=document.getElementById('pane-grid');
+  if(gridPane)gridPane.style.display=m.showGrid?'':'none';
   // counter pane
   const ctrPane=document.getElementById('pane-counter');
   if(ctrPane)ctrPane.style.display=m.showCounter?'':'none';
@@ -4135,6 +4175,7 @@ function bindControls(){
   document.getElementById('hs-loop-on').addEventListener('click',()=>{p09.looping=true;document.getElementById('hs-loop-on').classList.add('on');document.getElementById('hs-loop-off').classList.remove('on');});
   document.getElementById('hs-loop-off').addEventListener('click',()=>{p09.looping=false;document.getElementById('hs-loop-off').classList.add('on');document.getElementById('hs-loop-on').classList.remove('on');});
   document.getElementById('hs-gen-btn').addEventListener('click',()=>{p09.randomize();if(currentProg===9)resizeCv();});
+  document.getElementById('hs-rewind-btn').addEventListener('click',()=>{p09.rewind();});
   document.getElementById('hs-shuf-btn').addEventListener('click',()=>{p09.shuffleRhythms();});
   document.getElementById('hs-sus-on').addEventListener('click',()=>{p09.sustainOn=true;document.getElementById('hs-sus-on').classList.add('on');document.getElementById('hs-sus-off').classList.remove('on');});
   document.getElementById('hs-sus-off').addEventListener('click',()=>{p09.sustainOn=false;p09._releaseActive();document.getElementById('hs-sus-off').classList.add('on');document.getElementById('hs-sus-on').classList.remove('on');});
