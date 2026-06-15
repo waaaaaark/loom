@@ -212,7 +212,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   <div style="display:flex;align-items:center;">
     <div class="wordmark">LOOM</div>
     <div class="progtag" id="progtag">Program 01 — Conway</div>
-    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.2</div>
+    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.5</div>
   </div>
   <div class="topbar-r">
     <div id="midi-warn" style="display:none;font-size:9px;color:#ff4040;letter-spacing:2px;">NO WEB MIDI — USE CHROME</div>
@@ -3767,12 +3767,23 @@ function togglePanel(side){
 // ═══ SAVE / LOAD ═══════════════════════════════════════════════════════════
 function savePattern(){
   markClean();
-  const data={version:3,prog:currentProg,bpm,clockDiv,root:document.getElementById('root-sel').value,scale:document.getElementById('scale-sel').value,oct:document.getElementById('oct-sl').value,range:document.getElementById('range-sl').value,chordMode,chordPerRow:[...chordPerRow],
+  const data={version:4,prog:currentProg,bpm,clockDiv,
+    root:document.getElementById('root-sel').value,
+    scale:document.getElementById('scale-sel').value,
+    oct:document.getElementById('oct-sl').value,
+    range:document.getElementById('range-sl').value,
+    chordMode,chordPerRow:[...chordPerRow],
     p01:{cells:Array.from(p01.cells||[]),divs:Array.from(p01.divs||[]),rows:ROWS,cols:COLS},
     p02:{notes:(p02.notes||[]).map(r=>Array.from(r))},
     p03:{eucState:eucState.map(s=>({k:s.k,n:s.n,muted:s.muted,octShift:s.octShift}))},
     p04:{rows:(p04.rows||[]).map(r=>({...r,steps:Array.from(r.steps)}))},
     p05:{grids:mgGrids.map(g=>({rows:g.rows,cols:g.cols,cells:Array.from(g.cells),root:g.root,scaleName:g.scaleName,baseOct:g.baseOct,octRange:g.octRange,transpose:g.transpose,dir:g.dir,subdiv:g.subdiv,loopEnd:g.loopEnd,muted:g.muted,midiCh:g.midiCh,collapsed:g.collapsed}))},
+    p06:{grid:Array.from(p06.grid||[]),genState:Object.fromEntries(p06.genState||new Map())},
+    p07:{lanes:(p07.lanes||[]).map(l=>({len:l.len,muted:l.muted,notes:Array.from(l.notes),tied:Array.from(l.tied||[])}))},
+    p08:{cells:Array.from(p08.cells||[]),octaves:Array.from(p08.octaves||[]),rows:ROWS,cols:COLS,
+      cursors:(p08.cursors||[]).map(cu=>({row:cu.row,col:cu.col,dx:cu.dx,dy:cu.dy,divider:cu.divider}))},
+    p09:{slots:p09.slots.map(s=>({...s,notes:Array.from(s.notes||[])}))},
+    p10:{chords:p10.chords.map(ch=>({...ch,notes:Array.from(ch.notes||[])})),numChords:p10.numChords,complexity:p10.complexity,chaos:p10.chaos},
   };
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='loom-pattern.json';a.click();
   try{localStorage.setItem('loom_autosave',JSON.stringify(data));}catch(e){}
@@ -3822,15 +3833,55 @@ function applyPattern(data){
     p04.maxSteps=Math.max(...p04.rows.map(r=>r.stepCount));
   }
   if(data.p05&&data.p05.grids){data.p05.grids.forEach((gd,gi)=>{const g=mgGrids[gi];g.resize(gd.rows,gd.cols);g.cells=new Uint8Array(gd.cells);g.root=gd.root;g.scaleName=gd.scaleName;g.baseOct=gd.baseOct;g.octRange=gd.octRange;g.transpose=gd.transpose;g.dir=gd.dir;g.subdiv=gd.subdiv;g.loopEnd=gd.loopEnd;g.muted=gd.muted;g.midiCh=gd.midiCh;g.collapsed=gd.collapsed;g.noteMap=buildGridNoteMap(g.root,g.scaleName,g.baseOct,g.octRange,g.rows);});}
+
+  if(data.p06&&data.p06.grid){
+    p06.grid=new Uint8Array(data.p06.grid);
+    p06.signals=[];p06.genState=new Map();
+    if(data.p06.genState){Object.entries(data.p06.genState).forEach(([k,v])=>p06.genState.set(k,v));}
+  }
+
+  if(data.p07&&data.p07.lanes){
+    p07.lanes=data.p07.lanes.map(l=>({
+      ...l,
+      notes:new Int8Array(l.notes||[]),
+      tied:new Uint8Array(l.tied||new Array(l.len||0).fill(0)),
+      step:0,muted:l.muted||false,
+    }));
+    p07.numLanes=p07.lanes.length;
+  }
+
   if(data.p08){
-    const rows=data.p01?.rows||ROWS;
-    const cols=data.p01?.cols||COLS;
-    p08.cells=new Uint8Array(rows*cols);
-    p08.octaves=new Int8Array(rows*cols);
-    if(data.p08.cells){
-      const src=data.p08.cells;
-      for(let i=0;i<Math.min(src.length,p08.cells.length);i++)p08.cells[i]=src[i];
+    const r=data.p08.rows||ROWS,co=data.p08.cols||COLS;
+    p08.cells=new Uint8Array(data.p08.cells||new Array(r*co).fill(0));
+    p08.octaves=new Int8Array(data.p08.octaves||new Array(r*co).fill(0));
+    if(data.p08.cursors&&data.p08.cursors.length){
+      // Restore cursors — but ensure they exist first
+      if(!p08.cursors||!p08.cursors.length)p08._initCursors();
+      data.p08.cursors.forEach((cd,ci)=>{if(p08.cursors[ci]){Object.assign(p08.cursors[ci],cd);}});
     }
+  }
+
+  if(data.p09&&data.p09.slots){
+    p09.slots=data.p09.slots.map(s=>({
+      ...s,
+      notes:Array.isArray(s.notes)?s.notes:[],
+      empty:s.empty??true,
+      duration:s.duration||32,
+    }));
+    p09.numSlots=p09.slots.length;
+    p09.playStep=0;p09.slotTick=0;p09.tick32=0;p09._prevVoicing=null;p09._activeNotes=[];
+  }
+
+  if(data.p10&&(data.p10.chords?.length||data.p10.numChords)){
+    if(data.p10.chords&&data.p10.chords.length){
+      p10.chords=data.p10.chords.map(ch=>({...ch,notes:Array.isArray(ch.notes)?[...ch.notes]:[]}));
+    }
+    p10.numChords=data.p10.numChords||p10.chords.length||4;
+    p10.complexity=data.p10.complexity??50;
+    p10.chaos=data.p10.chaos??0;
+    p10.playStep=0;p10.chordTick=0;p10._activeNotes=[];
+    // If chords is empty (e.g. preset with only params), generate
+    if(!p10.chords.length)setTimeout(()=>{p10.generate();if(currentProg===10)resizeCv();},50);
   }
 
   buildNoteMap();renderRail();renderActivity();
@@ -3841,9 +3892,21 @@ function applyPattern(data){
   const m=MODES[targetProg];
   if(m&&m.obj){
     if(targetProg===4){
-      p04.renderGrid(); // rebuild DOM with restored data
+      p04.renderGrid();
     } else if(targetProg===5){
       p05.init();p05.draw();
+    } else if(targetProg===7){
+      p07._renderLaneControls();
+      resizeCv();
+    } else if(targetProg===8){
+      if(!p08.cursors||!p08.cursors.length)p08._initCursors();
+      resizeCv();
+    } else if(targetProg===9){
+      p09._syncUI();
+      resizeCv();
+    } else if(targetProg===10){
+      p10._syncUI();
+      resizeCv();
     } else if(m.usesCanvas){
       resizeCv();
     }
@@ -4091,69 +4154,37 @@ function _doLoadPreset(idx){
 
   // Special cases for procedurally seeded presets
   if(data._dwSeed){
-    // Drunk Walk — generate a musical cell pattern
+    ROWS=16;COLS=24;
     p08.cells=new Uint8Array(ROWS*COLS);
     p08.octaves=new Int8Array(ROWS*COLS);
-    // paint a blues scale pattern manually
     const pattern=[[2,3],[2,8],[4,5],[4,12],[6,3],[6,8],[8,15],[9,5],[9,10],[11,2],[11,7],[11,14],[13,4],[13,9]];
-    ROWS=16;COLS=24;
     pattern.forEach(([r,c])=>{if(r<ROWS&&c<COLS){p08.cells[r*COLS+c]=1;}});
-    data.p08={cells:Array.from(p08.cells)};
+    data.p08={cells:Array.from(p08.cells),octaves:Array.from(p08.octaves),rows:ROWS,cols:COLS};
     delete data._dwSeed;
   }
 
   if(data.p02&&data.p02._seed){
-    // Falling Scale — build programmatically
     const notes=[];
     for(let r=0;r<16;r++)notes.push(new Array(24).fill(0));
-    // place notes at different rows and columns with different divisions
     const divs=[4,4,8,8,16,16,2,4];
-    for(let c=0;c<8;c++){
-      const r=Math.floor((c/8)*14)+1;
-      notes[r][c*2]=divs[c];
-    }
+    for(let c=0;c<8;c++){const r=Math.floor((c/8)*14)+1;notes[r][c*2]=divs[c];}
     data.p02.notes=notes;
     delete data.p02._seed;
   }
 
-  if(data.p07){
-    p07.lanes=data.p07.lanes.map(l=>({
-      ...l,
-      notes:new Int8Array(l.notes),
-      tied:new Uint8Array(l.len||l.notes.length).fill(0),
-      step:0,
-      muted:l.muted||false,
-    }));
-    p07.numLanes=p07.lanes.length;
-    delete data.p07;
-  }
-
-  if(data.p11||data.p10_cf){
-    const cf=data.p11||data.p10_cf;
-    p10.complexity=cf.complexity||50;
-    p10.chaos=cf.chaos||0;
-    p10.numChords=cf.numChords||4;
-    p10.strumOn=cf.strumOn||false;
-    p10.chords=[];
+  // Map old p11 key → p10 format
+  if(data.p11){
+    data.p10=data.p10||{};
+    data.p10.complexity=data.p11.complexity||50;
+    data.p10.chaos=data.p11.chaos||0;
+    data.p10.numChords=data.p11.numChords||4;
+    data.p10.strumOn=data.p11.strumOn||false;
+    data.p10.chords=[];
     delete data.p11;
   }
 
   applyPattern(data);
   markClean();
-
-  // Post-load fixes for modes that need extra init after data restore
-  if(preset.data.prog===7){
-    p07._renderLaneControls();
-    p07.draw();
-  }
-  if(preset.data.prog===8){
-    // ensure cursors exist after skipping init
-    if(!p08.cursors||p08.cursors.length===0)p08._initCursors();
-    p08.draw();
-  }
-  if(preset.data.prog===10){
-    setTimeout(()=>p10.generate(),50);
-  }
 }
 
 // ═══ FEATURE TOUR ══════════════════════════════════════════════════════════
