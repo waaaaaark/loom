@@ -3644,6 +3644,12 @@ function resizeCv(){
   if(currentProg===5)return;
   const wrap=document.getElementById('canvas-wrap');
   const W=wrap.clientWidth,H=wrap.clientHeight;
+  // Modes that manage their own layout get the full canvas
+  if(currentProg===7||currentProg===9||currentProg===10){
+    canvas.width=W||800;canvas.height=H||400;
+    oscCanvas.width=oscCanvas.parentElement.clientWidth-24||160;
+    m.obj.draw();return;
+  }
   // mode 2 needs extra height below grid for column note labels
   const extraH=currentProg===2?Math.max(16,Math.min(22,Math.floor(H/(ROWS+1)))):0;
   const cw=Math.floor(W/COLS),ch=Math.floor((H-extraH)/ROWS);
@@ -4123,13 +4129,12 @@ function _doLoadPreset(idx){
   }
 
   if(data.p11||data.p10_cf){
-    // Chord Forge params (was p11, now p10)
     const cf=data.p11||data.p10_cf;
     p10.complexity=cf.complexity||50;
     p10.chaos=cf.chaos||0;
-    p11.numChords=data.p11.numChords||4;
-    p11.strumOn=data.p11.strumOn||false;
-    p11.chords=[];
+    p10.numChords=cf.numChords||4;
+    p10.strumOn=cf.strumOn||false;
+    p10.chords=[];
     delete data.p11;
   }
 
@@ -4146,8 +4151,8 @@ function _doLoadPreset(idx){
     if(!p08.cursors||p08.cursors.length===0)p08._initCursors();
     p08.draw();
   }
-  if(preset.data.prog===11){
-    setTimeout(()=>p11.generate(),50);
+  if(preset.data.prog===10){
+    setTimeout(()=>p10.generate(),50);
   }
 }
 
