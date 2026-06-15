@@ -212,7 +212,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   <div style="display:flex;align-items:center;">
     <div class="wordmark">LOOM</div>
     <div class="progtag" id="progtag">Program 01 — Conway</div>
-    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.1</div>
+    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.2</div>
   </div>
   <div class="topbar-r">
     <div id="midi-warn" style="display:none;font-size:9px;color:#ff4040;letter-spacing:2px;">NO WEB MIDI — USE CHROME</div>
@@ -1937,8 +1937,44 @@ function playSynth(note,vel){
   _voices.push({osc1,osc2,env,startTime:now});
   setTimeout(()=>{const i=_voices.findIndex(v=>v.osc1===osc1);if(i>=0)_voices.splice(i,1);},(stopT-now)*1000+50);
 }
+// Play a sustained note — holds until _stopLong is called or it times out
+const _longVoices=new Map(); // note → {osc1,osc2,env,filter,pan}
+function _playLong(note,vel){
+  if(!audioEnabled||!audioCtx)return;
+  // Stop any existing long voice on this note
+  _stopLong(note);
+  if(_voices.length>=MAX_VOICES)_stealVoice();
+  const p=_synthParams(),now=audioCtx.currentTime;
+  const peak=(vel/127)*0.26,hz=midiToHz(note),hz2=midiToHz(note+p.osc2oct*12);
+  const osc1=audioCtx.createOscillator(),osc2=audioCtx.createOscillator();
+  osc1.type=waveform;osc2.type=waveform2;
+  osc1.frequency.value=hz;osc2.frequency.value=hz2;
+  osc1.detune.value=p.detune;osc2.detune.value=-p.detune;
+  const mix1=audioCtx.createGain();mix1.gain.value=1-p.osc2mix*0.5;
+  const mix2=audioCtx.createGain();mix2.gain.value=p.osc2mix*0.5;
+  osc1.connect(mix1);osc2.connect(mix2);
+  const flt=audioCtx.createBiquadFilter();flt.type=p.fltType;flt.frequency.value=p.fltCut;flt.Q.value=p.fltRes;
+  const env=audioCtx.createGain();
+  env.gain.setValueAtTime(0.001,now);
+  env.gain.linearRampToValueAtTime(peak,now+p.atk);
+  env.gain.linearRampToValueAtTime(peak*p.sus,now+p.atk+p.dcy);
+  // Hold at sustain level indefinitely
+  const pan=audioCtx.createStereoPanner();pan.pan.value=Math.max(-1,Math.min(1,((note-60)/36)*0.8));
+  mix1.connect(flt);mix2.connect(flt);flt.connect(env);env.connect(pan);pan.connect(masterGain);
+  osc1.start(now);osc2.start(now);
+  _longVoices.set(note,{osc1,osc2,env,pan});
+}
+function _stopLong(note){
+  const v=_longVoices.get(note);
+  if(!v)return;
+  const now=audioCtx?.currentTime||0;
+  const p=_synthParams();
+  try{v.env.gain.cancelScheduledValues(now);v.env.gain.setTargetAtTime(0,now,p.rel/3);
+    setTimeout(()=>{try{v.osc1.stop();v.osc2.stop();}catch(e){}},p.rel*1000+100);}catch(e){}
+  _longVoices.delete(note);
+}
+function _stopAllLong(){_longVoices.forEach((_,n)=>_stopLong(n));}
 function trigNote(root,vel,row){
-  const notes=getChordNotes(root,row??0);
   notes.forEach(n=>{midiNoteOn(n,vel);if(audioEnabled){ensureAudio();playSynth(n,vel);}});
   _flashMidiDot();
 }
@@ -3036,7 +3072,7 @@ const p09={
 
   _releaseActive(){
     if(!this._activeNotes.length)return;
-    this._activeNotes.forEach(n=>midiNoteOff(n));
+    this._activeNotes.forEach(n=>{midiNoteOff(n);_stopLong(n);});
     this._activeNotes=[];
   },
 
@@ -3053,12 +3089,17 @@ const p09={
         if(this.strumOn){
           voiced.forEach((n,vi)=>setTimeout(()=>{
             midiNoteOn(n,95,this.sustainOn);
-            if(audioEnabled){ensureAudio();playSynth(n,95);}
+            if(audioEnabled){ensureAudio();
+              // When sustaining, use a very long release so audio holds too
+              this.sustainOn?_playLong(n,95):playSynth(n,95);
+            }
           },vi*40));
         } else {
           voiced.forEach(n=>{
             midiNoteOn(n,95,this.sustainOn);
-            if(audioEnabled){ensureAudio();playSynth(n,95);}
+            if(audioEnabled){ensureAudio();
+              this.sustainOn?_playLong(n,95):playSynth(n,95);
+            }
           });
         }
         if(this.sustainOn)this._activeNotes=[...voiced];
@@ -3428,9 +3469,15 @@ const p10={
     const noOff=this.sustainOn&&!forceAutoOff;
     if(this.sustainOn)this._releaseActive();
     if(this.strumOn){
-      ch.notes.forEach((n,vi)=>setTimeout(()=>{midiNoteOn(n,95,noOff);if(audioEnabled){ensureAudio();playSynth(n,95);}},vi*35));
+      ch.notes.forEach((n,vi)=>setTimeout(()=>{
+        midiNoteOn(n,95,noOff);
+        if(audioEnabled){ensureAudio();noOff?_playLong(n,95):playSynth(n,95);}
+      },vi*35));
     } else {
-      ch.notes.forEach(n=>{midiNoteOn(n,95,noOff);if(audioEnabled){ensureAudio();playSynth(n,95);}});
+      ch.notes.forEach(n=>{
+        midiNoteOn(n,95,noOff);
+        if(audioEnabled){ensureAudio();noOff?_playLong(n,95):playSynth(n,95);}
+      });
     }
     if(noOff)this._activeNotes=[...ch.notes];
     _flashMidiDot();
@@ -3951,7 +3998,7 @@ const PRESETS=[
   {
     name:'Jazz Sequence',
     desc:'Chord Forge — ii-V-I and borrowed chords in F Ionian, medium complexity',
-    data:{version:3,prog:11,bpm:92,clockDiv:4,root:'5',scale:'ionian',oct:'3',range:'2',
+    data:{version:3,prog:10,bpm:92,clockDiv:4,root:'5',scale:'ionian',oct:'3',range:'2',
       chordMode:true,chordPerRow:[],
       p11:{complexity:65,chaos:15,numChords:8,strumOn:true}},
   },
@@ -4064,20 +4111,22 @@ function _doLoadPreset(idx){
   }
 
   if(data.p07){
-    // rebuild p07 lane data
     p07.lanes=data.p07.lanes.map(l=>({
       ...l,
       notes:new Int8Array(l.notes),
+      tied:new Uint8Array(l.len||l.notes.length).fill(0),
       step:0,
+      muted:l.muted||false,
     }));
     p07.numLanes=p07.lanes.length;
     delete data.p07;
   }
 
-  if(data.p11){
-    // set p11 params then generate
-    p11.complexity=data.p11.complexity||50;
-    p11.chaos=data.p11.chaos||0;
+  if(data.p11||data.p10_cf){
+    // Chord Forge params (was p11, now p10)
+    const cf=data.p11||data.p10_cf;
+    p10.complexity=cf.complexity||50;
+    p10.chaos=cf.chaos||0;
     p11.numChords=data.p11.numChords||4;
     p11.strumOn=data.p11.strumOn||false;
     p11.chords=[];
