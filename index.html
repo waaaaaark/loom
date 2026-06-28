@@ -1975,6 +1975,7 @@ function _stopLong(note){
 }
 function _stopAllLong(){_longVoices.forEach((_,n)=>_stopLong(n));}
 function trigNote(root,vel,row){
+  const notes=getChordNotes(root,row??0);
   notes.forEach(n=>{midiNoteOn(n,vel);if(audioEnabled){ensureAudio();playSynth(n,vel);}});
   _flashMidiDot();
 }
