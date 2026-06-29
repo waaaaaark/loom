@@ -163,6 +163,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .dstep.on.med{background:var(--accent2);border-color:var(--accent2);}
 .dstep.on.ghost{background:#3d1a07;border-color:var(--border2);}
 .dstep.cur{outline:2px solid var(--accent3);outline-offset:-2px;}
+body.light .dstep{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.18);}
+body.light .dstep:hover{border-color:rgba(0,0,0,0.35);}
+body.light .dstep.on.ghost{background:#caa580;border-color:#a07850;}
 .drum-note-ch{display:flex;align-items:center;gap:4px;padding:0 6px;flex-shrink:0;border-left:1px solid var(--border);height:100%;}
 .drum-note-ch input[type=number]{width:38px;font-size:10px;padding:2px 4px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;}
 .drum-note-ch select{font-size:10px;padding:3px 4px;width:48px;}
@@ -212,7 +215,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   <div style="display:flex;align-items:center;">
     <div class="wordmark">LOOM</div>
     <div class="progtag" id="progtag">Program 01 — Conway</div>
-    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.5</div>
+    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.6</div>
   </div>
   <div class="topbar-r">
     <div id="midi-warn" style="display:none;font-size:9px;color:#ff4040;letter-spacing:2px;">NO WEB MIDI — USE CHROME</div>
@@ -235,6 +238,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
     </div>
     <div class="mpill"><div class="dot" id="dot"></div><span id="dotlbl">NO MIDI</span></div>
     <div class="dot" id="midi-act-dot" title="MIDI activity" style="flex-shrink:0;"></div>
+    <button class="tb-btn" id="kill-all-btn" onclick="killAllNotes()" title="Panic — stop all MIDI and audio notes immediately" style="color:var(--accent);border-color:var(--accent);">⏹ Kill All</button>
   </div>
 </header>
 
@@ -428,7 +432,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
     <div class="pane" id="pane-mg">
       <div class="ph" onclick="tp('pane-mg')"><span class="ptitle">Multi-Grid</span><span class="parr">▾</span></div>
       <div class="pbody">
-        <div style="font-size:9px;color:var(--tdim);line-height:1.6;">Three independent step grids. Left-click=place note. Right-click or Shift+click=set probability (100→75→50→25→off). Each grid has its own playhead, scale, MIDI out and direction.</div>
+        <div style="font-size:9px;color:var(--tdim);line-height:1.6;">Three independent step grids. Left-click=place note. Each grid has its own playhead, scale, MIDI out and direction.</div>
+        <div class="row" style="justify-content:space-between;margin-top:6px;">
+          <div class="lbl" title="When on, cells can have 25-100% chance to fire each pass">Probability</div>
+          <div class="tgg" style="width:auto;">
+            <button class="tg" id="mg-prob-on">On</button>
+            <button class="tg on" id="mg-prob-off">Off</button>
+          </div>
+        </div>
+        <div id="mg-prob-hint" style="font-size:8px;color:var(--tdim);margin-top:2px;">Right-click or Shift+click cycles probability when enabled. Currently every filled cell always fires.</div>
         <div style="font-size:9px;color:var(--tmid);margin-top:4px;">Grid settings are in each grid's header bar.</div>
       </div>
     </div>
@@ -663,9 +675,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   <div class="pane" id="pane-midi">
     <div class="ph" onclick="tp('pane-midi')"><span class="ptitle">MIDI Out</span><span class="parr">▾</span></div>
     <div class="pbody">
-      <select id="midi-sel"><option value="">— no device —</option></select>
+      <select id="midi-sel" title="MIDI output device"><option value="">— no device —</option></select>
       <div class="row"><div class="lbl">Ch</div>
-        <select id="midi-ch">
+        <select id="midi-ch" title="MIDI channel (1-16) that notes are sent on">
           <option value="0">01</option><option value="1">02</option><option value="2">03</option><option value="3">04</option><option value="4">05</option><option value="5">06</option><option value="6">07</option><option value="7">08</option><option value="8">09</option><option value="9">10</option><option value="10">11</option><option value="11">12</option><option value="12">13</option><option value="13">14</option><option value="14">15</option><option value="15">16</option>
         </select>
       </div>
@@ -765,7 +777,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
       <div class="srow"><div class="srow-head"><div class="lbl">Delay</div><div class="val" id="dly-val">0%</div></div>
         <input type="range" id="dly-sl" min="0" max="100" value="0"></div>
       <div class="srow"><div class="srow-head"><div class="lbl">Dly Time</div><div class="val" id="dlytime-val">½</div></div>
-        <input type="range" id="dlytime-sl" min="1" max="8" value="4" step="1"></div>
+        <input type="range" id="dlytime-sl" min="1" max="11" value="4" step="1"></div>
     </div>
   </div>
 
@@ -1333,19 +1345,19 @@ const p04={
       lbl.addEventListener('click',()=>{const n=prompt('Name:',row.name);if(n!==null&&n.trim()){row.name=n.trim();lbl.textContent=row.name;}});
       rowEl.appendChild(lbl);
       const ctrl=document.createElement('div');ctrl.className='drum-controls';
-      const mb=document.createElement('button');mb.className='drum-mute'+(row.muted?' muted':'');mb.textContent='M';
+      const mb=document.createElement('button');mb.className='drum-mute'+(row.muted?' muted':'');mb.textContent='M';mb.title='Mute this drum voice';
       mb.addEventListener('mousedown',e=>{e.stopPropagation();row.muted=!row.muted;mb.className='drum-mute'+(row.muted?' muted':'');rowEl.classList.toggle('muted',row.muted);});
       ctrl.appendChild(mb);
-      const sb=document.createElement('button');sb.className='drum-mute'+(row.solo?' solo':'');sb.textContent='S';
+      const sb=document.createElement('button');sb.className='drum-mute'+(row.solo?' solo':'');sb.textContent='S';sb.title='Solo this drum voice (mutes all others)';
       sb.addEventListener('mousedown',e=>{e.stopPropagation();row.solo=!row.solo;sb.className='drum-mute'+(row.solo?' solo':'');});
       ctrl.appendChild(sb);
       const scl=document.createElement('span');scl.style.cssText='font-size:8px;color:var(--tdim);margin-left:2px;';scl.textContent='n';ctrl.appendChild(scl);
-      const sci=document.createElement('input');sci.type='number';sci.min=1;sci.max=32;sci.value=row.stepCount;sci.style.cssText='width:30px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
+      const sci=document.createElement('input');sci.type='number';sci.min=1;sci.max=32;sci.value=row.stepCount;sci.title='Number of steps in this row\'s pattern';sci.style.cssText='width:30px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
       sci.addEventListener('change',()=>{row.stepCount=Math.max(1,Math.min(32,parseInt(sci.value)||16));sci.value=row.stepCount;this.renderGrid();});
       ctrl.appendChild(sci);
       // Subdivision selector
       const sdl=document.createElement('span');sdl.style.cssText='font-size:8px;color:var(--tdim);';sdl.textContent='÷';ctrl.appendChild(sdl);
-      const sds=document.createElement('select');sds.style.cssText='background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:1px 2px;';
+      const sds=document.createElement('select');sds.title='Rhythmic subdivision for this row — runs independently of other rows';sds.style.cssText='background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:1px 2px;';
       this._SUBDIVS.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===(row.subdiv||8))o.selected=true;sds.appendChild(o);});
       sds.addEventListener('change',()=>{row.subdiv=parseInt(sds.value);row.tickAcc=0;});
       ctrl.appendChild(sds);rowEl.appendChild(ctrl);
@@ -1374,7 +1386,7 @@ const p04={
       ni.addEventListener('change',()=>{row.note=Math.max(0,Math.min(127,parseInt(ni.value)||36));ni.value=row.note;});
       nc.appendChild(ni);
       const cl=document.createElement('span');cl.style.cssText='font-size:8px;color:var(--tdim);';cl.textContent='ch';nc.appendChild(cl);
-      const cs=document.createElement('select');
+      const cs=document.createElement('select');cs.title='MIDI channel for this drum voice';
       for(let c=0;c<16;c++){const o=document.createElement('option');o.value=c;o.textContent=c+1;if(c===row.ch)o.selected=true;cs.appendChild(o);}
       cs.addEventListener('change',()=>{row.ch=parseInt(cs.value);});nc.appendChild(cs);
       rowEl.appendChild(nc);el.appendChild(rowEl);
@@ -1406,6 +1418,7 @@ const p04={
 const MG_COLORS=['#E8521A','#F5A623','#4a9eff'];
 const MG_COLORS_DIM=['#3d1a07','#3d2800','#0a1a30'];
 const PROB_VALS=[1,.75,.5,.25]; // click cycles through these
+let MG_PROB_ENABLED=false; // disabled by default per user request — toggle in left panel
 
 function buildGridNoteMap(root,scaleName,baseOct,octRange,rows){
   const scale=SCALES[scaleName]||SCALES.ionian;
@@ -1479,7 +1492,7 @@ class MGrid{
     for(let r=0;r<this.rows;r++){
       const v=this.cells[r*this.cols+step];
       if(v===0)continue;
-      const prob=PROB_VALS[v-1]??1;
+      const prob=MG_PROB_ENABLED?(PROB_VALS[v-1]??1):1; // probability disabled = always fire if cell is filled
       if(Math.random()>prob)continue;
       const note=this.getNote(r);
       const vel=Math.max(50,Math.min(127,95+Math.floor(Math.random()*25)));
@@ -1526,7 +1539,7 @@ class MGrid{
         const x=c*cw,y=r*ch;
         const isLoop=c>=this.loopEnd;
         if(v>0){
-          const alpha=PROB_VALS[v-1]??1;
+          const alpha=MG_PROB_ENABLED?(PROB_VALS[v-1]??1):1;
           this.ctx.globalAlpha=alpha;
           this.ctx.fillStyle=col;
           this.ctx.fillRect(x+1,y+1,cw-2,ch-2);
@@ -1569,7 +1582,7 @@ class MGrid{
     const c=Math.floor(px/cw),r=Math.floor(py/ch);
     if(r<0||r>=this.rows||c<0||c>=this.cols)return;
     const i=r*this.cols+c;
-    if(shift){// cycle probability
+    if(shift&&MG_PROB_ENABLED){// cycle probability
       this.cells[i]=(this.cells[i]+1)%5;
     } else {
       this.cells[i]=this.cells[i]>0?0:4; // toggle off/full
@@ -1643,7 +1656,7 @@ const p05={
       midiSel.addEventListener('change',()=>{g.midiOutId=midiSel.value;});
       hdr.appendChild(makeLabel('out'));hdr.appendChild(midiSel);
       // midi channel
-      const chSel=document.createElement('select');chSel.className='mg-sel';
+      const chSel=document.createElement('select');chSel.className='mg-sel';chSel.title='MIDI channel for this grid';
       for(let c=0;c<16;c++){const o=document.createElement('option');o.value=c;o.textContent=c+1;if(c===g.midiCh)o.selected=true;chSel.appendChild(o);}
       chSel.addEventListener('change',()=>{g.midiCh=parseInt(chSel.value);});
       hdr.appendChild(makeLabel('ch'));hdr.appendChild(chSel);
@@ -1797,6 +1810,20 @@ function midiNoteOff(note){
   midiOut.send([0x80|ch,note,0]);
 }
 function midiAllOff(){if(!midiOut)return;midiOut.send([0xB0|parseInt(document.getElementById('midi-ch').value),123,0]);}
+function killAllNotes(){
+  // Send all-notes-off on every channel, every output, plus stop sustained audio
+  if(midiOut){
+    for(let ch=0;ch<16;ch++){
+      try{midiOut.send([0xB0|ch,123,0]);midiOut.send([0xB0|ch,120,0]);}catch(e){}
+    }
+  }
+  if(typeof _stopAllLong==='function')_stopAllLong();
+  if(typeof p09!=='undefined')p09._activeNotes=[];
+  if(typeof p10!=='undefined')p10._activeNotes=[];
+  // Flash the button to confirm
+  const btn=document.getElementById('kill-all-btn');
+  if(btn){btn.style.background='var(--accent)';btn.style.color='#000';setTimeout(()=>{btn.style.background='';btn.style.color='var(--accent)';},200);}
+}
 let clockTicker=null;
 function setMidiClock(on){midiClockOn=on;document.getElementById('clk-on').classList.toggle('on',on);document.getElementById('clk-off').classList.toggle('on',!on);}
 function sendMidiClock(){if(midiClockOn&&midiOut)midiOut.send([0xF8]);}
@@ -1874,7 +1901,8 @@ function syncAudio(){
   else{reverbGain.gain.setTargetAtTime(p.rvb,now,.05);dryGain.gain.setTargetAtTime(1-p.rvb*0.4,now,.05);}
   delayGain.gain.setTargetAtTime(p.dly,now,.05);
   const beatSec=60/bpm;
-  const divFracs=[0.125,0.1875,0.25,0.375,0.5,0.625,0.75,1.0];
+  // 1=1/8, 2=1/8 dotted, 3=1/4, 4=1/4 dotted, 5=3/8, 6=1/2, 7=1/2 dotted, 8=5/8, 9=3/4, 10=1 bar, 11=1 bar dotted
+  const divFracs=[0.125,0.1875,0.25,0.375,0.375,0.5,0.75,0.625,0.75,1.0,1.5];
   delayNode.delayTime.setTargetAtTime(beatSec*(divFracs[(p.dlyDiv||4)-1]||0.5),now,.02);
   if(lfoNode)lfoNode.frequency.setTargetAtTime(p.lfoRate,now,.02);
 }
@@ -3077,6 +3105,13 @@ const p09={
     this._activeNotes=[];
   },
 
+  rewind(){
+    this._releaseActive();
+    this.playStep=0;this.slotTick=0;this.tick32=0;
+    this._prevVoicing=null;
+    this.draw();
+  },
+
   step(){
     this.tick32++;
     const slot=this.slots[this.playStep];
@@ -3461,7 +3496,7 @@ const p10={
 
   _releaseActive(){
     if(!this._activeNotes.length)return;
-    this._activeNotes.forEach(n=>midiNoteOff(n));
+    this._activeNotes.forEach(n=>{midiNoteOff(n);_stopLong(n);});
     this._activeNotes=[];
   },
 
@@ -3699,6 +3734,11 @@ function switchProg(n){
 function _doSwitchProg(n, skipInit=false){
   const prev=MODES[currentProg];
   stopT();
+  // Kill all notes — MIDI and sustained audio — whenever switching modes
+  midiAllOff();
+  if(typeof _stopAllLong==='function')_stopAllLong();
+  if(typeof p09!=='undefined'&&p09._activeNotes)p09._activeNotes=[];
+  if(typeof p10!=='undefined'&&p10._activeNotes)p10._activeNotes=[];
   // hide previous mode's DOM
   if(prev&&prev.obj&&prev.obj.hide)prev.obj.hide();
   if(prev&&prev.usesCanvas&&canvas)canvas.style.display='block';
@@ -3960,6 +4000,30 @@ function undo(){
   setTimeout(()=>app.style.outline='',200);
 }
 const PRESETS=[
+  {
+    name:'Sparse Drift',
+    desc:'Step Sequencer — a sparse five-note phrase in C Ionian, room to breathe between hits',
+    data:{version:4,prog:2,bpm:120,clockDiv:4,root:'0',scale:'ionian',oct:'3',range:'3',
+      chordMode:false,chordPerRow:['none','none','none','none','none','none','none','dim','none','maj','none','aug','sus2','none','none','none'],
+      p02:{notes:[
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,2,8,0,0,0,4,1,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      ]}},
+  },
   {
     name:'Autumn Drift',
     desc:'Conway in D Dorian — slow quarter-note cells wander into sparse eighth-note melodies',
@@ -4282,7 +4346,7 @@ function bindControls(){
   document.getElementById('vol-sl').addEventListener('input',e=>{document.getElementById('vol-val').textContent=e.target.value+'%';syncAudio();});
   document.getElementById('rvb-sl').addEventListener('input',e=>{document.getElementById('rvb-val').textContent=e.target.value+'%';syncAudio();});
   document.getElementById('dly-sl').addEventListener('input',e=>{document.getElementById('dly-val').textContent=e.target.value+'%';syncAudio();});
-  const dlyLabels=['⅛','3/16','¼','3/8','½','⅝','¾','1'];
+  const dlyLabels=['⅛','⅛.','¼','¼.','⅜','½','½.','⅝','¾','1','1.'];
   document.getElementById('dlytime-sl').addEventListener('input',e=>{document.getElementById('dlytime-val').textContent=dlyLabels[parseInt(e.target.value)-1]||'½';syncAudio();});
   document.getElementById('osc2oct-sl').addEventListener('input',e=>document.getElementById('osc2oct-val').textContent=(parseInt(e.target.value)>=0?'+':'')+e.target.value);
   document.getElementById('osc2mix-sl').addEventListener('input',e=>document.getElementById('osc2mix-val').textContent=e.target.value+'%');
@@ -4352,6 +4416,18 @@ function bindControls(){
   document.getElementById('cf-sus-off').addEventListener('click',()=>{p10.sustainOn=false;p10._releaseActive();document.getElementById('cf-sus-off').classList.add('on');document.getElementById('cf-sus-on').classList.remove('on');});
   document.getElementById('cf-strum-on').addEventListener('click',()=>{p10.strumOn=true;document.getElementById('cf-strum-on').classList.add('on');document.getElementById('cf-strum-off').classList.remove('on');});
   document.getElementById('cf-strum-off').addEventListener('click',()=>{p10.strumOn=false;document.getElementById('cf-strum-off').classList.add('on');document.getElementById('cf-strum-on').classList.remove('on');});
+  document.getElementById('mg-prob-on').addEventListener('click',()=>{
+    MG_PROB_ENABLED=true;
+    document.getElementById('mg-prob-on').classList.add('on');
+    document.getElementById('mg-prob-off').classList.remove('on');
+    document.getElementById('mg-prob-hint').textContent='Right-click or Shift+click cycles probability (100→75→50→25→off).';
+  });
+  document.getElementById('mg-prob-off').addEventListener('click',()=>{
+    MG_PROB_ENABLED=false;
+    document.getElementById('mg-prob-off').classList.add('on');
+    document.getElementById('mg-prob-on').classList.remove('on');
+    document.getElementById('mg-prob-hint').textContent='Right-click or Shift+click cycles probability when enabled. Currently every filled cell always fires.';
+  });
   document.getElementById('dw-cursors-sl').addEventListener('input',e=>{
     const n=parseInt(e.target.value);
     document.getElementById('dw-cursors-val').textContent=n;
