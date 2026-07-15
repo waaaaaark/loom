@@ -147,25 +147,33 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .euc-step.hit:hover{background:var(--accent2);}
 /* drum */
 #drum-grid{display:flex;flex-direction:column;width:100%;overflow-x:auto;}
-.drum-row{display:flex;align-items:center;height:52px;border-bottom:1px solid var(--border);min-width:0;}
-.drum-row.muted{opacity:.35;}
-.drum-label{width:62px;flex-shrink:0;font-size:10px;color:var(--tmid);padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;border-right:1px solid var(--border);height:100%;display:flex;align-items:center;}
+.drum-row{display:flex;align-items:center;height:48px;border-bottom:1px solid var(--border2);min-width:0;background:var(--surface);}
+.drum-row:nth-child(odd){background:var(--surf2);}
+.drum-row.muted{opacity:.4;}
+body.light .drum-row{background:#e8e3dc;}
+body.light .drum-row:nth-child(odd){background:#e0dbd3;}
+.drum-label{width:64px;flex-shrink:0;font-size:10px;color:var(--text);padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;border-right:1px solid var(--border2);height:100%;display:flex;align-items:center;}
 .drum-label:hover{color:var(--accent);}
-.drum-controls{display:flex;align-items:center;gap:4px;padding:0 6px;flex-shrink:0;border-right:1px solid var(--border);height:100%;}
+.drum-controls{display:flex;align-items:center;gap:4px;padding:0 6px;flex-shrink:0;border-right:1px solid var(--border2);height:100%;}
 .drum-mute{background:none;border:1px solid var(--border);color:var(--tdim);font-family:var(--mono);font-size:8px;padding:3px 5px;cursor:pointer;letter-spacing:1px;}
 .drum-mute.on{border-color:var(--accent);color:var(--accent);}
 .drum-mute.solo{border-color:var(--accent2);color:var(--accent2);}
 .drum-mute.muted{border-color:#ff4040;color:#ff4040;}
 .drum-steps{display:flex;align-items:center;gap:3px;padding:0 6px;flex:1;height:100%;}
-.dstep{width:34px;height:34px;flex-shrink:0;border:1px solid var(--border);background:var(--black);cursor:pointer;transition:background .08s,border-color .08s;}
-.dstep:hover{border-color:var(--border2);}
-.dstep.on{background:var(--accent);border-color:var(--accent);}
-.dstep.on.med{background:var(--accent2);border-color:var(--accent2);}
-.dstep.on.ghost{background:#3d1a07;border-color:var(--border2);}
-.dstep.cur{outline:2px solid var(--accent3);outline-offset:-2px;}
-body.light .dstep{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.18);}
-body.light .dstep:hover{border-color:rgba(0,0,0,0.35);}
-body.light .dstep.on.ghost{background:#caa580;border-color:#a07850;}
+.dstep{width:30px;height:32px;flex-shrink:0;border:1px solid #2a2822;background:#111009;cursor:pointer;transition:background .06s,border-color .06s;border-radius:2px;}
+.dstep:hover{border-color:var(--border2);background:#1a1810;}
+.dstep.on{background:var(--accent);border-color:#ff7040;box-shadow:0 0 6px rgba(232,82,26,0.4);}
+.dstep.on.med{background:var(--accent2);border-color:#ffb030;box-shadow:0 0 4px rgba(245,166,35,0.3);}
+.dstep.on.ghost{background:#2a1505;border-color:#4a2808;box-shadow:none;}
+.dstep.cur{outline:2px solid var(--accent3);outline-offset:-2px;background:#1c1a10;}
+.dstep.cur.on{outline-color:#fff;}
+/* light mode */
+body.light .dstep{background:#d4cfc8;border-color:#bab5ae;}
+body.light .dstep:hover{background:#c8c3bc;border-color:#a09890;}
+body.light .dstep.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 4px rgba(232,82,26,0.3);}
+body.light .dstep.on.med{background:var(--accent2);border-color:var(--accent2);}
+body.light .dstep.on.ghost{background:#c8a880;border-color:#a08060;}
+body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
 .drum-note-ch{display:flex;align-items:center;gap:4px;padding:0 6px;flex-shrink:0;border-left:1px solid var(--border);height:100%;}
 .drum-note-ch input[type=number]{width:38px;font-size:10px;padding:2px 4px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;}
 .drum-note-ch select{font-size:10px;padding:3px 4px;width:48px;}
@@ -215,7 +223,7 @@ body.light .dstep.on.ghost{background:#caa580;border-color:#a07850;}
   <div style="display:flex;align-items:center;">
     <div class="wordmark">LOOM</div>
     <div class="progtag" id="progtag">Program 01 — Conway</div>
-    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.6</div>
+    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.7</div>
   </div>
   <div class="topbar-r">
     <div id="midi-warn" style="display:none;font-size:9px;color:#ff4040;letter-spacing:2px;">NO WEB MIDI — USE CHROME</div>
@@ -701,7 +709,22 @@ body.light .dstep.on.ghost{background:#caa580;border-color:#a07850;}
 
   <!-- audio engine -->
   <div class="pane" id="pane-audio">
-    <div class="ph" onclick="tp('pane-audio')"><span class="ptitle">Audio Engine</span><span class="parr">▾</span></div>
+    <div class="ph" style="cursor:default;">
+      <span class="ptitle" onclick="tp('pane-audio')" style="cursor:pointer;">Audio Engine</span>
+      <select id="synth-preset-sel" title="Load a synth preset" style="font-size:9px;background:var(--black);border:1px solid var(--border);color:var(--tmid);font-family:var(--mono);padding:1px 3px;max-width:80px;" onchange="loadSynthPreset(this.value);this.value=''">
+        <option value="">— preset —</option>
+        <option value="pad">Pad</option>
+        <option value="pluck">Pluck</option>
+        <option value="bass">Bass</option>
+        <option value="lead">Lead</option>
+        <option value="organ">Organ</option>
+      </select>
+      <div style="display:flex;gap:3px;align-items:center;">
+        <button class="tb-btn" onclick="saveSynthPreset()" title="Save current synth settings to file" style="font-size:8px;padding:2px 5px;">Save</button>
+        <label class="tb-btn" style="font-size:8px;padding:2px 5px;cursor:pointer;" title="Load synth settings from file">Load<input type="file" accept=".json" id="synth-load-input" style="display:none;" onchange="loadSynthFile(this)"></label>
+      </div>
+      <span class="parr" onclick="tp('pane-audio')" style="cursor:pointer;">▾</span>
+    </div>
     <div class="pbody">
       <div class="row" style="justify-content:space-between;">
         <div class="lbl">Engine</div>
@@ -3112,6 +3135,13 @@ const p09={
     this.draw();
   },
 
+  shuffleRhythms(){
+    // Musically weighted durations in 32nd-note ticks: half, dotted-half, whole(x3), dotted-whole, 2-bar
+    const durs=[16,24,32,32,32,48,64];
+    this.slots.forEach(s=>{s.duration=durs[Math.floor(Math.random()*durs.length)];});
+    this.draw();
+  },
+
   step(){
     this.tick32++;
     const slot=this.slots[this.playStep];
@@ -3669,6 +3699,9 @@ function startT(){
 function stopT(){
   playing=false;if(ticker){clearInterval(ticker);ticker=null;}
   stopMidiClock();sendMidiStop();
+  // Release any sustained notes from modes that hold them
+  if(typeof p09!=='undefined'&&p09._releaseActive)p09._releaseActive();
+  if(typeof p10!=='undefined'&&p10._releaseActive)p10._releaseActive();
   document.getElementById('btn-play').textContent='▶ Play';
   document.getElementById('btn-play').classList.remove('on');
 }
@@ -4001,6 +4034,20 @@ function undo(){
   app.style.outline='1px solid var(--accent2)';
   setTimeout(()=>app.style.outline='',200);
 }
+// ═══ SYNTH PRESETS ═════════════════════════════════════════════════════════
+const SYNTH_PRESETS={
+  pad:{waveform:'sine',waveform2:'triangle',atk:400,dcy:800,sus:80,rel:2000,osc2oct:0,osc2mix:60,detune:8,fltType:'lowpass',fltCut:45,fltRes:1,fltEnv:0,lfoTarget:'cutoff',lfoRate:0.3,lfoDepth:15,vol:70,rvb:60,dly:0,dlyDiv:4},
+  pluck:{waveform:'sawtooth',waveform2:'sine',atk:1,dcy:200,sus:20,rel:400,osc2oct:0,osc2mix:30,detune:3,fltType:'lowpass',fltCut:65,fltRes:4,fltEnv:60,lfoTarget:'pitch',lfoRate:0,lfoDepth:0,vol:70,rvb:20,dly:30,dlyDiv:5},
+  bass:{waveform:'sawtooth',waveform2:'square',atk:5,dcy:150,sus:60,rel:200,osc2oct:-1,osc2mix:40,detune:2,fltType:'lowpass',fltCut:40,fltRes:3,fltEnv:40,lfoTarget:'pitch',lfoRate:0,lfoDepth:0,vol:80,rvb:10,dly:0,dlyDiv:4},
+  lead:{waveform:'sawtooth',waveform2:'sawtooth',atk:10,dcy:100,sus:70,rel:300,osc2oct:0,osc2mix:50,detune:15,fltType:'lowpass',fltCut:70,fltRes:5,fltEnv:20,lfoTarget:'pitch',lfoRate:5,lfoDepth:20,vol:70,rvb:25,dly:20,dlyDiv:4},
+  organ:{waveform:'sine',waveform2:'sine',atk:10,dcy:10,sus:100,rel:100,osc2oct:1,osc2mix:70,detune:0,fltType:'lowpass',fltCut:90,fltRes:1,fltEnv:0,lfoTarget:'amp',lfoRate:6,lfoDepth:8,vol:65,rvb:30,dly:0,dlyDiv:4},
+};
+function getSynthState(){const g=id=>document.getElementById(id);return{waveform,waveform2,atk:parseInt(g('atk-sl').value),dcy:parseInt(g('dcy-sl').value),sus:parseInt(g('sus-sl').value),rel:parseInt(g('rel-sl').value),osc2oct:parseInt(g('osc2oct-sl').value),osc2mix:parseInt(g('osc2mix-sl').value),detune:parseInt(g('detune-sl').value),fltType:g('flt-lp').classList.contains('on')?'lowpass':g('flt-hp').classList.contains('on')?'highpass':'bandpass',fltCut:parseInt(g('flt-cut-sl').value),fltRes:parseFloat(g('flt-res-sl').value),fltEnv:parseInt(g('flt-env-sl').value),lfoTarget,lfoRate:parseFloat(g('lfo-rate-sl').value),lfoDepth:parseInt(g('lfo-depth-sl').value),vol:parseInt(g('vol-sl').value),rvb:parseInt(g('rvb-sl').value),dly:parseInt(g('dly-sl').value),dlyDiv:parseInt(g('dlytime-sl').value)};}
+function applySynthState(s){const set=(id,v)=>{const el=document.getElementById(id);if(el){el.value=v;el.dispatchEvent(new Event('input'));}};if(s.waveform)setWave(s.waveform);if(s.waveform2)setWave2(s.waveform2);if(s.atk!==undefined)set('atk-sl',s.atk);if(s.dcy!==undefined)set('dcy-sl',s.dcy);if(s.sus!==undefined)set('sus-sl',s.sus);if(s.rel!==undefined)set('rel-sl',s.rel);if(s.osc2oct!==undefined)set('osc2oct-sl',s.osc2oct);if(s.osc2mix!==undefined)set('osc2mix-sl',s.osc2mix);if(s.detune!==undefined)set('detune-sl',s.detune);if(s.fltType)setFilterType(s.fltType);if(s.fltCut!==undefined)set('flt-cut-sl',s.fltCut);if(s.fltRes!==undefined)set('flt-res-sl',s.fltRes);if(s.fltEnv!==undefined)set('flt-env-sl',s.fltEnv);if(s.lfoTarget)setLfoTarget(s.lfoTarget);if(s.lfoRate!==undefined)set('lfo-rate-sl',s.lfoRate);if(s.lfoDepth!==undefined)set('lfo-depth-sl',s.lfoDepth);if(s.vol!==undefined)set('vol-sl',s.vol);if(s.rvb!==undefined)set('rvb-sl',s.rvb);if(s.dly!==undefined)set('dly-sl',s.dly);if(s.dlyDiv!==undefined)set('dlytime-sl',s.dlyDiv);syncAudio();}
+function loadSynthPreset(name){const p=SYNTH_PRESETS[name];if(!p)return;applySynthState(p);}
+function saveSynthPreset(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(getSynthState(),null,2)],{type:'application/json'}));a.download='loom-sound.json';a.click();}
+function loadSynthFile(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{applySynthState(JSON.parse(e.target.result));}catch(err){}};r.readAsText(f);input.value='';}
+
 const PRESETS=[
   {
     name:'Eleven Against Sixteen',
