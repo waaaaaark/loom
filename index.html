@@ -49,7 +49,7 @@ html,body{height:100%;overflow:hidden;background:var(--black);color:var(--text);
 .pnum{font-size:7px;letter-spacing:1px;color:inherit;line-height:1;}
 /* panels */
 .spanel{grid-row:2;background:var(--surface);display:flex;flex-direction:column;overflow:hidden;}
-#cp{grid-column:2;border-right:1px solid var(--border);overflow-y:auto;}
+#cp{grid-column:2;border-right:1px solid var(--border);overflow-y:auto;min-width:160px;max-width:400px;}
 #rp{grid-column:4;border-left:1px solid var(--border);}
 #cp.gone,#rp.gone{display:none;}
 /* panes */
@@ -223,7 +223,7 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
   <div style="display:flex;align-items:center;">
     <div class="wordmark">LOOM</div>
     <div class="progtag" id="progtag">Program 01 — Conway</div>
-    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.8</div>
+    <div style="font-size:8px;color:var(--tdim);letter-spacing:2px;margin-left:10px;">v0.9</div>
   </div>
   <div class="topbar-r">
     <div id="midi-warn" style="display:none;font-size:9px;color:#ff4040;letter-spacing:2px;">NO WEB MIDI — USE CHROME</div>
@@ -516,7 +516,13 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
     <div class="pane" id="pane-pw">
       <div class="ph" onclick="tp('pane-pw')"><span class="ptitle">Poly Weaver</span><span class="parr">▾</span></div>
       <div class="pbody">
-        <div style="font-size:9px;color:var(--tdim);line-height:1.6;">Each lane is an independent melodic loop. Different lengths create shifting polyrhythmic patterns. Click cells to place notes, drag up/down to change pitch. <b style="color:var(--tmid);">Right-click</b> a filled cell to tie it to the next — tied notes don't retrigger, they sustain.</div>
+        <div style="font-size:9px;color:var(--tdim);line-height:1.6;">Each lane is an independent melodic loop. Different lengths create shifting polyrhythmic patterns.</div>
+        <div style="font-size:9px;color:var(--tdim);line-height:1.8;margin-top:4px;border-top:1px solid var(--border);padding-top:4px;">
+          <b style="color:var(--tmid);">Click</b> cell = place/move note (drag up/down to change pitch)<br>
+          <b style="color:var(--tmid);">Double-click</b> filled cell = delete note<br>
+          <b style="color:var(--tmid);">Right-click</b> filled cell = toggle tie to next step<br>
+          Tied notes don't retrigger — they sustain through the next step.
+        </div>
         <div class="srow" style="margin-top:2px;">
           <div class="srow-head"><div class="lbl">Lanes</div><div class="val" id="pw-lanes-val">4</div></div>
           <input type="range" id="pw-lanes-sl" min="2" max="8" value="4" step="1">
@@ -597,7 +603,7 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
       <div class="pbody">
         <div style="font-size:9px;color:var(--tdim);line-height:1.6;">Click a slot to pick a chord. Drag slot right edge to resize duration. Right-click = clear. Sustain holds chords until next fires.</div>
         <div class="lbl" style="margin-top:6px;color:var(--tmid);">— Playback —</div>
-        <div class="srow"><div class="srow-head"><div class="lbl">Slots</div><div class="val" id="hs-slots-val">8</div></div><input type="range" id="hs-slots-sl" min="2" max="16" value="8" step="1"></div>
+        <div class="srow"><div class="srow-head"><div class="lbl">Slots</div><div class="val" id="hs-slots-val">4</div></div><input type="range" id="hs-slots-sl" min="2" max="16" value="4" step="1"></div>
         <div class="srow"><div class="srow-head"><div class="lbl">Voices</div><div class="val" id="hs-voices-val">4</div></div><input type="range" id="hs-voices-sl" min="2" max="5" value="4" step="1"></div>
         <div class="row" style="justify-content:space-between;"><div class="lbl">Sustain</div><div class="tgg" style="width:auto;"><button class="tg" id="hs-sus-on">On</button><button class="tg on" id="hs-sus-off">Off</button></div></div>
         <div class="row" style="justify-content:space-between;margin-top:2px;"><div class="lbl">Strum</div><div class="tgg" style="width:auto;"><button class="tg" id="hs-strum-on">On</button><button class="tg on" id="hs-strum-off">Off</button></div></div>
@@ -2394,25 +2400,69 @@ const p06={
     if(r<0||r>=ROWS||c<0||c>=COLS)return;
     const key=`${r},${c}`;
     if(erase){
+      // Right-click = open operator picker menu
+      this._openOpMenu(cx,cy,r,c);
+      return;
+    }
+    // Left-click = erase (toggle off)
+    if(this.grid[r*COLS+c]>0){
       this.grid[r*COLS+c]=0;
       this.genState.delete(key);
       this.counterState.delete(key);
       this.midiTrigState.delete(key);
-    } else {
-      const next=(this.grid[r*COLS+c]+1)%SF_OP_COUNT;
-      this.grid[r*COLS+c]=next;
-      if(next===1||next===17){
-        this.genState.set(key,{dx:this.genDx,dy:this.genDy,period:this.genPeriod,tickAcc:0});
-      } else if(next===15){
-        this.counterState.set(key,{count:0,N:parseInt(document.getElementById('sf-gate-sl').value)||4});
-      } else if(next===18){
-        this.midiTrigState.set(key,{note:parseInt(document.getElementById('sf-miditrig-sl').value)||60});
-      } else {
-        this.genState.delete(key);
-      }
     }
     this.dragging=true;this.draw();
   },
+
+  _openOpMenu(cx,cy,r,c){
+    // Close any existing menu
+    const existing=document.getElementById('sf-op-menu');
+    if(existing)document.body.removeChild(existing);
+
+    const key=`${r},${c}`;
+    const menu=document.createElement('div');
+    menu.id='sf-op-menu';
+    menu.style.cssText=`position:fixed;left:${Math.min(cx,window.innerWidth-220)}px;top:${Math.min(cy,window.innerHeight-300)}px;z-index:9000;background:var(--surface);border:1px solid var(--border);padding:6px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:210px;box-shadow:0 4px 16px rgba(0,0,0,.5);`;
+
+    // "Erase" option first
+    const eraseBtn=document.createElement('button');
+    eraseBtn.style.cssText='background:var(--surf2);border:1px solid var(--border);color:var(--tdim);font-family:var(--mono);font-size:9px;padding:6px 2px;cursor:pointer;border-radius:2px;grid-column:span 4;';
+    eraseBtn.textContent='✕  Erase cell';
+    eraseBtn.addEventListener('click',()=>{
+      this.grid[r*COLS+c]=0;this.genState.delete(key);this.counterState.delete(key);this.midiTrigState.delete(key);
+      document.body.removeChild(menu);this.draw();
+    });
+    menu.appendChild(eraseBtn);
+
+    // Operator buttons
+    for(let op=1;op<SF_OP_COUNT;op++){
+      const lbl=SF_LABELS[op];const col=SF_COLORS[op]||'#fff';
+      const btn=document.createElement('button');
+      btn.style.cssText=`background:var(--black);border:1px solid var(--border2);color:${col};font-family:var(--mono);font-size:11px;font-weight:bold;padding:8px 4px;cursor:pointer;border-radius:2px;transition:background .08s;`;
+      btn.textContent=lbl;btn.title=this._OP_NAMES[op]||lbl;
+      btn.addEventListener('mouseenter',()=>{btn.style.background='var(--surf2)';btn.style.borderColor=col;});
+      btn.addEventListener('mouseleave',()=>{btn.style.background='var(--black)';btn.style.borderColor='var(--border2)';});
+      btn.addEventListener('click',()=>{
+        this.grid[r*COLS+c]=op;
+        if(op===1||op===17){this.genState.set(key,{dx:this.genDx,dy:this.genDy,period:this.genPeriod,tickAcc:0});}
+        else if(op===15){this.counterState.set(key,{count:0,N:parseInt(document.getElementById('sf-gate-sl').value)||4});}
+        else if(op===18){this.midiTrigState.set(key,{note:parseInt(document.getElementById('sf-miditrig-sl').value)||60});}
+        else{this.genState.delete(key);}
+        document.body.removeChild(menu);this.draw();
+      });
+      menu.appendChild(btn);
+    }
+
+    // Close on outside click
+    setTimeout(()=>{
+      const close=e=>{if(!menu.contains(e.target)){document.body.removeChild(menu);document.removeEventListener('mousedown',close);}};
+      document.addEventListener('mousedown',close);
+    },0);
+
+    document.body.appendChild(menu);
+  },
+
+  _OP_NAMES:{1:'Generator',2:'Note (plays pitch)',3:'Split (up+down)',4:'Delay',5:'Gate (every N)',6:'Random (50%)',7:'Kill',8:'Up (redirect ↑)',9:'Down (redirect ↓)',10:'Transpose Up',11:'Transpose Down',12:'Harmonise',13:'Echo',14:'Bounce',15:'Counter (every N)',16:'Fork (3-way)',17:'Random Gen',18:'MIDI Trig'},
   onMove(){},onUp(){this.dragging=false;},
 
   setGenDir(dx,dy){this.genDx=dx;this.genDy=dy;},
@@ -2931,7 +2981,7 @@ const p08={
 // ═══ PROGRAM 09 — HARMONIC SEQUENCER (with integrated generation engine) ══
 const p09={
   slots:[],
-  numSlots:8,
+  numSlots:4,
   numVoices:4,
   playStep:0,
   tick32:0,
@@ -3125,6 +3175,10 @@ const p09={
       }
       document.getElementById('m-hs-step').textContent=this.playStep+1;
       document.getElementById('m-hs-chords').textContent=this.numSlots;
+      // Show current slot duration in beats
+      const beats=((slot?.duration||32)/8).toFixed(1).replace('.0','');
+      const hud=document.getElementById('hud09');
+      if(hud){const sp=hud.querySelector('span');if(sp)sp.textContent=`Slot ${this.playStep+1}/${this.numSlots} · ${beats}b`;}
     }
     this.slotTick++;
     if(this.slotTick>=dur){
@@ -4006,7 +4060,7 @@ function bindControls(){
   });
   const getObj=()=>{const m=MODES[currentProg];return(m&&m.usesCanvas&&m.obj)?m.obj:null;};
   canvas.addEventListener('mousedown',e=>{e.preventDefault();const o=getObj();if(o){_snapshot();o.onDown(e.clientX,e.clientY,e.button===2);markDirty();}});
-  canvas.addEventListener('contextmenu',e=>{e.preventDefault();const o=getObj();if(o&&o.onDown)o.onDown(e.clientX,e.clientY,true);});
+  canvas.addEventListener('contextmenu',e=>{e.preventDefault();const o=getObj();if(o&&o.onDown&&currentProg!==9&&currentProg!==7&&currentProg!==6)o.onDown(e.clientX,e.clientY,true);});
   window.addEventListener('mousemove',e=>{
     const o=getObj();if(o)o.onMove(e.clientX,e.clientY);
     // p09 resize cursor hint
@@ -4019,6 +4073,15 @@ function bindControls(){
     }
   });
   window.addEventListener('mouseup',()=>{const o=getObj();if(o)o.onUp();});
+  canvas.addEventListener('dblclick',e=>{
+    if(currentProg===7){
+      const hit=p07._laneStepFromXY(e.clientX,e.clientY);
+      if(hit&&p07.lanes[hit.li]){
+        p07.lanes[hit.li].notes[hit.s]=-1;
+        p07.draw();
+      }
+    }
+  });
   canvas.addEventListener('touchstart',e=>{e.preventDefault();const o=getObj();if(o){const t=e.touches[0];o.onDown(t.clientX,t.clientY);}},{passive:false});
   window.addEventListener('touchmove',e=>{const o=getObj();if(o){const t=e.touches[0];o.onMove(t.clientX,t.clientY);}},{passive:false});
   // Mode 8 — scroll wheel on canvas to change cell octave
@@ -4037,24 +4100,42 @@ function bindControls(){
     }
   },{passive:false});
 
-  // Left panel resizable via drag handle
+  // Left panel resizable via drag handle on right border
   const cp=document.getElementById('cp');
+  const appEl=document.getElementById('app');
   const handle=document.createElement('div');
-  handle.style.cssText='position:absolute;right:-3px;top:0;bottom:0;width:6px;cursor:col-resize;z-index:100;background:transparent;';
-  cp.style.position='relative';
-  cp.appendChild(handle);
+  handle.id='cp-resize-handle';
+  handle.style.cssText='position:fixed;width:8px;cursor:col-resize;z-index:200;top:0;bottom:0;background:transparent;';
+  document.body.appendChild(handle);
+
+  function _updateHandlePos(){
+    const r=cp.getBoundingClientRect();
+    handle.style.left=(r.right-4)+'px';
+    handle.style.top=r.top+'px';
+    handle.style.height=r.height+'px';
+  }
+
   let _panelDragging=false,_panelStartX=0,_panelStartW=0;
-  handle.addEventListener('mousedown',e=>{_panelDragging=true;_panelStartX=e.clientX;_panelStartW=cp.offsetWidth;e.preventDefault();});
-  window.addEventListener('mousedown',e=>{if(e.target===handle)_panelDragging=true;});
+  handle.addEventListener('mousedown',e=>{
+    _panelDragging=true;_panelStartX=e.clientX;_panelStartW=cp.offsetWidth;
+    document.body.style.cursor='col-resize';document.body.style.userSelect='none';
+    e.preventDefault();
+  });
   window.addEventListener('mousemove',e=>{
+    _updateHandlePos();
     if(!_panelDragging)return;
     const newW=Math.max(160,Math.min(400,_panelStartW+(e.clientX-_panelStartX)));
-    cp.style.width=newW+'px';
+    cp.style.width=newW+'px';cp.style.minWidth=newW+'px';cp.style.maxWidth=newW+'px';
+    _updateHandlePos();
     try{localStorage.setItem('loom_panel_w',newW);}catch(err){}
+  },true);
+  window.addEventListener('mouseup',()=>{
+    if(_panelDragging){_panelDragging=false;document.body.style.cursor='';document.body.style.userSelect='';}
   });
-  window.addEventListener('mouseup',()=>{_panelDragging=false;});
   // Restore saved panel width
-  try{const pw=localStorage.getItem('loom_panel_w');if(pw)cp.style.width=pw+'px';}catch(err){}
+  try{const pw=localStorage.getItem('loom_panel_w');if(pw){const w=parseInt(pw);cp.style.width=w+'px';cp.style.minWidth=w+'px';cp.style.maxWidth=w+'px';}}catch(err){}
+  // Position handle after layout settles
+  requestAnimationFrame(_updateHandlePos);
   window.addEventListener('resize',()=>{if(currentProg===5)p05.resizeCanvases();else resizeCv();});
 }
 
