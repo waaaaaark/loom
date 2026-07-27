@@ -227,9 +227,9 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
   </div>
   <div class="topbar-r">
     <div id="midi-warn" style="display:none;font-size:9px;color:#ff4040;letter-spacing:2px;">NO WEB MIDI — USE CHROME</div>
-    <button class="tb-btn" onclick="savePattern()">Save</button>
-    <label class="tb-btn" style="cursor:pointer;">Load<input type="file" id="load-file" accept=".json" style="display:none;" onchange="loadPattern(event)"></label>
-    <button class="tb-btn" id="preset-btn" onclick="togglePresetMenu()">Presets ▾</button>
+    <button class="tb-btn" onclick="savePattern()" title="Download all 9 programs and settings as a JSON pattern file">Save</button>
+    <label class="tb-btn" style="cursor:pointer;" title="Load a pattern file, replacing all current programs and settings">Load<input type="file" id="load-file" accept=".json" style="display:none;" onchange="loadPattern(event)"></label>
+    <button class="tb-btn" id="preset-btn" onclick="togglePresetMenu()" title="Load a built-in example pattern">Presets ▾</button>
     <button class="tb-btn" onclick="startTour()" title="Feature tour">?</button>
     <button class="tb-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark" style="padding:4px 8px;line-height:1;">
       <svg id="theme-icon-dark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -328,16 +328,16 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
   <div class="pane" id="pane-scale">
     <div class="ph" onclick="tp('pane-scale')"><span class="ptitle">Scale</span><span class="parr">▾</span></div>
     <div class="pbody">
-      <div class="row"><div class="lbl">Root</div>
-        <select id="root-sel">
+      <div class="row"><div class="lbl" title="The tonic all row pitches are built from">Root</div>
+        <select id="root-sel" title="The tonic all row pitches are built from">
           <option value="0">C</option><option value="1">C#/Db</option><option value="2">D</option>
           <option value="3">D#/Eb</option><option value="4">E</option><option value="5">F</option>
           <option value="6">F#/Gb</option><option value="7">G</option><option value="8">G#/Ab</option>
           <option value="9">A</option><option value="10">A#/Bb</option><option value="11">B</option>
         </select>
       </div>
-      <div class="row"><div class="lbl">Mode</div>
-        <select id="scale-sel">
+      <div class="row"><div class="lbl" title="The scale/mode row pitches are drawn from">Mode</div>
+        <select id="scale-sel" title="The scale/mode row pitches are drawn from">
           <optgroup label="Diatonic"><option value="ionian">Ionian (Major)</option><option value="dorian">Dorian</option><option value="phrygian">Phrygian</option><option value="lydian">Lydian</option><option value="mixolydian">Mixolydian</option><option value="aeolian">Aeolian (Minor)</option><option value="locrian">Locrian</option></optgroup>
           <optgroup label="Harmonic/Melodic"><option value="harm_minor">Harmonic Minor</option><option value="mel_minor">Melodic Minor</option><option value="phryg_dom">Phrygian Dominant</option><option value="lydian_dom">Lydian Dominant</option><option value="super_loc">Super Locrian</option></optgroup>
           <optgroup label="Pentatonic/Blues"><option value="penta_maj">Pentatonic Major</option><option value="penta_min">Pentatonic Minor</option><option value="blues_min">Blues Minor</option><option value="blues_maj">Blues Major</option></optgroup>
@@ -346,12 +346,12 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
         </select>
       </div>
       <div class="srow">
-        <div class="srow-head"><div class="lbl">Octave</div><div class="val" id="oct-val">3</div></div>
-        <input type="range" id="oct-sl" min="0" max="8" value="3" step="1">
+        <div class="srow-head"><div class="lbl" title="Base octave rows are centered around">Octave</div><div class="val" id="oct-val">3</div></div>
+        <input type="range" id="oct-sl" min="0" max="8" value="3" step="1" title="Base octave rows are centered around">
       </div>
       <div class="srow">
-        <div class="srow-head"><div class="lbl">Range</div><div class="val" id="range-val">2oct</div></div>
-        <input type="range" id="range-sl" min="1" max="5" value="2" step="1">
+        <div class="srow-head"><div class="lbl" title="How many octaves the rows span">Range</div><div class="val" id="range-val">2oct</div></div>
+        <input type="range" id="range-sl" min="1" max="5" value="2" step="1" title="How many octaves the rows span">
       </div>
     </div>
   </div>
@@ -361,7 +361,7 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
     <div class="ph" onclick="tp('pane-chord')"><span class="ptitle">Chord Mode</span><span class="parr">▾</span></div>
     <div class="pbody">
       <div class="row" style="justify-content:space-between;">
-        <div class="lbl">Enable</div>
+        <div class="lbl" title="When on, each row can fire a full chord instead of a single note (set per row in the pane below)">Enable</div>
         <div class="tgg" style="width:auto;">
           <button class="tg" id="chord-off" onclick="setChordMode(false)">Off</button>
           <button class="tg on" id="chord-on" onclick="setChordMode(true)">On</button>
@@ -408,7 +408,7 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
       <div class="ph" onclick="tp('pane-euc')"><span class="ptitle">Euclidean</span><span class="parr">▾</span></div>
       <div class="pbody">
         <div style="font-size:9px;color:var(--tdim);line-height:1.5;">k=hits, n=steps. Click pattern cells to toggle. Click canvas step to toggle.</div>
-        <button class="btn" onclick="randomizeEuclid()">Randomize</button>
+        <button class="btn" onclick="randomizeEuclid()" title="Randomize k/n hit patterns for every row">Randomize</button>
         <div class="euc-rows" id="euc-rows"></div>
       </div>
     </div>
@@ -420,8 +420,8 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
       <div class="ph" onclick="tp('pane-drum')"><span class="ptitle">Drum Machine</span><span class="parr">▾</span></div>
       <div class="pbody">
         <div class="srow">
-          <div class="srow-head"><div class="lbl">Swing</div><div class="val" id="swing-val">0%</div></div>
-          <input type="range" id="swing-sl" min="0" max="50" value="0">
+          <div class="srow-head"><div class="lbl" title="Delays every other step slightly for a swung feel">Swing</div><div class="val" id="swing-val">0%</div></div>
+          <input type="range" id="swing-sl" min="0" max="50" value="0" title="Delays every other step slightly for a swung feel">
         </div>
         <div style="font-size:9px;color:var(--tdim);line-height:1.5;">Left-click=toggle. Right-click=cycle velocity (full/med/ghost). Click label to rename.</div>
       </div>
@@ -475,37 +475,37 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
           <div></div>
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">Gen Period</div><div class="val" id="sf-period-val">8</div></div>
-          <input type="range" id="sf-period-sl" min="1" max="32" value="8">
+          <div class="srow-head"><div class="lbl" title="Ticks between each Generator (G) firing a new signal">Gen Period</div><div class="val" id="sf-period-val">8</div></div>
+          <input type="range" id="sf-period-sl" min="1" max="32" value="8" title="Ticks between each Generator (G) firing a new signal">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">RandGen Prob</div><div class="val" id="sf-randgen-val">25%</div></div>
-          <input type="range" id="sf-randgen-sl" min="1" max="100" value="25">
+          <div class="srow-head"><div class="lbl" title="Chance per tick that a RandGen (R) cell fires a new signal">RandGen Prob</div><div class="val" id="sf-randgen-val">25%</div></div>
+          <input type="range" id="sf-randgen-sl" min="1" max="100" value="25" title="Chance per tick that a RandGen (R) cell fires a new signal">
         </div>
         <div class="lbl" style="margin-top:6px;color:var(--tmid);">— Operators —</div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">Delay N</div><div class="val" id="sf-delay-val">2</div></div>
-          <input type="range" id="sf-delay-sl" min="1" max="16" value="2">
+          <div class="srow-head"><div class="lbl" title="Ticks a signal is held before a Delay (D) cell releases it">Delay N</div><div class="val" id="sf-delay-val">2</div></div>
+          <input type="range" id="sf-delay-sl" min="1" max="16" value="2" title="Ticks a signal is held before a Delay (D) cell releases it">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">Gate / Counter N</div><div class="val" id="sf-gate-val">2</div></div>
-          <input type="range" id="sf-gate-sl" min="2" max="16" value="2">
+          <div class="srow-head"><div class="lbl" title="How many passes a Gate (%) or Counter (C) cell needs before it lets a signal through">Gate / Counter N</div><div class="val" id="sf-gate-val">2</div></div>
+          <input type="range" id="sf-gate-sl" min="2" max="16" value="2" title="How many passes a Gate (%) or Counter (C) cell needs before it lets a signal through">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">Transpose st</div><div class="val" id="sf-tp-val">1</div></div>
-          <input type="range" id="sf-tp-sl" min="1" max="12" value="1">
+          <div class="srow-head"><div class="lbl" title="Semitones a Transpose (T+/T-) cell shifts a signal's pitch">Transpose st</div><div class="val" id="sf-tp-val">1</div></div>
+          <input type="range" id="sf-tp-sl" min="1" max="12" value="1" title="Semitones a Transpose (T+/T-) cell shifts a signal's pitch">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">Harmonise st</div><div class="val" id="sf-harm-val">7st</div></div>
-          <input type="range" id="sf-harm-sl" min="1" max="12" value="7">
+          <div class="srow-head"><div class="lbl" title="Interval in semitones a Harmonise (H) cell adds alongside the original signal">Harmonise st</div><div class="val" id="sf-harm-val">7st</div></div>
+          <input type="range" id="sf-harm-sl" min="1" max="12" value="7" title="Interval in semitones a Harmonise (H) cell adds alongside the original signal">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">Echo Delay</div><div class="val" id="sf-echo-val">4</div></div>
-          <input type="range" id="sf-echo-sl" min="1" max="16" value="4">
+          <div class="srow-head"><div class="lbl" title="Ticks between repeats produced by an Echo (E) cell">Echo Delay</div><div class="val" id="sf-echo-val">4</div></div>
+          <input type="range" id="sf-echo-sl" min="1" max="16" value="4" title="Ticks between repeats produced by an Echo (E) cell">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">MidiTrig Note</div><div class="val" id="sf-miditrig-val">C4</div></div>
-          <input type="range" id="sf-miditrig-sl" min="0" max="127" value="60">
+          <div class="srow-head"><div class="lbl" title="The fixed note a MidiTrig (M) cell fires on signal arrival">MidiTrig Note</div><div class="val" id="sf-miditrig-val">C4</div></div>
+          <input type="range" id="sf-miditrig-sl" min="0" max="127" value="60" title="The fixed note a MidiTrig (M) cell fires on signal arrival">
         </div>
       </div>
     </div>
@@ -524,8 +524,8 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
           Tied notes don't retrigger — they sustain through the next step.
         </div>
         <div class="srow" style="margin-top:2px;">
-          <div class="srow-head"><div class="lbl">Lanes</div><div class="val" id="pw-lanes-val">4</div></div>
-          <input type="range" id="pw-lanes-sl" min="2" max="8" value="4" step="1">
+          <div class="srow-head"><div class="lbl" title="Number of independent note lanes, each with its own length">Lanes</div><div class="val" id="pw-lanes-val">4</div></div>
+          <input type="range" id="pw-lanes-sl" min="2" max="8" value="4" step="1" title="Number of independent note lanes, each with its own length">
         </div>
         <div id="pw-lane-controls" style="display:flex;flex-direction:column;gap:5px;margin-top:6px;"></div>
       </div>
@@ -547,14 +547,14 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
           <span style="color:#FFD580;">■</span> +2 oct
         </div>
         <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;">
-          <div class="lbl" style="margin-bottom:6px;">Import Image</div>
-          <label class="btn" style="cursor:pointer;display:block;text-align:center;">
+          <div class="lbl" style="margin-bottom:6px;" title="Load an image and convert its shape into filled grid cells">Import Image</div>
+          <label class="btn" style="cursor:pointer;display:block;text-align:center;" title="Load an image and convert its shape into filled grid cells">
             📷 Choose Image
             <input type="file" id="dw-img-input" accept="image/*" style="display:none;">
           </label>
           <div class="srow" style="margin-top:6px;">
-            <div class="srow-head"><div class="lbl">Threshold</div><div class="val" id="dw-thresh-val">50%</div></div>
-            <input type="range" id="dw-thresh-sl" min="1" max="99" value="50">
+            <div class="srow-head"><div class="lbl" title="Brightness cutoff for which pixels count as filled when converting the image">Threshold</div><div class="val" id="dw-thresh-val">50%</div></div>
+            <input type="range" id="dw-thresh-sl" min="1" max="99" value="50" title="Brightness cutoff for which pixels count as filled when converting the image">
           </div>
           <div class="row" style="justify-content:space-between;margin-top:2px;">
             <div class="lbl" title="Flip which pixels (light vs dark) count as filled when applying an image">Invert</div>
@@ -565,24 +565,24 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
           </div>
           <div id="dw-img-preview" style="margin-top:8px;display:none;">
             <canvas id="dw-preview-canvas" style="width:100%;image-rendering:pixelated;border:1px solid var(--border);display:block;"></canvas>
-            <button class="btn" id="dw-img-apply" style="margin-top:6px;width:100%;">Apply to Grid</button>
+            <button class="btn" id="dw-img-apply" style="margin-top:6px;width:100%;" title="Replace the grid with the image preview above">Apply to Grid</button>
           </div>
         </div>
         <div class="srow" style="margin-top:2px;">
-          <div class="srow-head"><div class="lbl">Cursors</div><div class="val" id="dw-cursors-val">3</div></div>
-          <input type="range" id="dw-cursors-sl" min="1" max="8" value="3" step="1">
+          <div class="srow-head"><div class="lbl" title="Number of independent walkers moving across the grid">Cursors</div><div class="val" id="dw-cursors-val">3</div></div>
+          <input type="range" id="dw-cursors-sl" min="1" max="8" value="3" step="1" title="Number of independent walkers moving across the grid">
         </div>
         <div class="srow">
           <div class="srow-head"><div class="lbl" title="Weights cursor movement toward the right (positive) or left (negative)">H Bias →</div><div class="val" id="dw-hbias-val">0</div></div>
-          <input type="range" id="dw-hbias-sl" min="-4" max="4" value="0" step="1">
+          <input type="range" id="dw-hbias-sl" min="-4" max="4" value="0" step="1" title="Weights cursor movement toward the right (positive) or left (negative)">
         </div>
         <div class="srow">
           <div class="srow-head"><div class="lbl" title="Weights cursor movement toward down (positive) or up (negative)">V Bias ↓</div><div class="val" id="dw-vbias-val">0</div></div>
-          <input type="range" id="dw-vbias-sl" min="-4" max="4" value="0" step="1">
+          <input type="range" id="dw-vbias-sl" min="-4" max="4" value="0" step="1" title="Weights cursor movement toward down (positive) or up (negative)">
         </div>
         <div class="srow">
           <div class="srow-head"><div class="lbl" title="Chance per step that a cursor jumps to a random cell instead of walking">Jump %</div><div class="val" id="dw-jump-val">10%</div></div>
-          <input type="range" id="dw-jump-sl" min="0" max="50" value="10">
+          <input type="range" id="dw-jump-sl" min="0" max="50" value="10" title="Chance per step that a cursor jumps to a random cell instead of walking">
         </div>
         <div class="row" style="justify-content:space-between;margin-top:2px;">
           <div class="lbl" title="When a cursor walks off the edge of the grid, wrap it to the opposite side instead of stopping">Wrap</div>
@@ -603,17 +603,17 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
       <div class="pbody">
         <div style="font-size:9px;color:var(--tdim);line-height:1.6;">Click a slot to pick a chord. Drag slot right edge to resize duration. Right-click = clear. Sustain holds chords until next fires.</div>
         <div class="lbl" style="margin-top:6px;color:var(--tmid);">— Playback —</div>
-        <div class="srow"><div class="srow-head"><div class="lbl">Slots</div><div class="val" id="hs-slots-val">4</div></div><input type="range" id="hs-slots-sl" min="2" max="16" value="4" step="1"></div>
-        <div class="srow"><div class="srow-head"><div class="lbl">Voices</div><div class="val" id="hs-voices-val">4</div></div><input type="range" id="hs-voices-sl" min="2" max="5" value="4" step="1"></div>
+        <div class="srow"><div class="srow-head"><div class="lbl" title="Number of chord slots in the progression">Slots</div><div class="val" id="hs-slots-val">4</div></div><input type="range" id="hs-slots-sl" min="2" max="16" value="4" step="1" title="Number of chord slots in the progression"></div>
+        <div class="srow"><div class="srow-head"><div class="lbl" title="Number of notes per generated chord">Voices</div><div class="val" id="hs-voices-val">4</div></div><input type="range" id="hs-voices-sl" min="2" max="5" value="4" step="1" title="Number of notes per generated chord"></div>
         <div class="row" style="justify-content:space-between;"><div class="lbl" title="Hold each chord until the next one fires, instead of cutting it off">Sustain</div><div class="tgg" style="width:auto;"><button class="tg" id="hs-sus-on">On</button><button class="tg on" id="hs-sus-off">Off</button></div></div>
         <div class="row" style="justify-content:space-between;margin-top:2px;"><div class="lbl" title="Play each chord's notes slightly staggered instead of all at once">Strum</div><div class="tgg" style="width:auto;"><button class="tg" id="hs-strum-on">On</button><button class="tg on" id="hs-strum-off">Off</button></div></div>
         <div class="row" style="justify-content:space-between;margin-top:2px;"><div class="lbl" title="Loop back to the first slot after the last one plays">Loop</div><div class="tgg" style="width:auto;"><button class="tg on" id="hs-loop-on">On</button><button class="tg" id="hs-loop-off">Off</button></div></div>
         <div class="lbl" style="margin-top:6px;color:var(--tmid);">— Generate —</div>
-        <div class="srow"><div class="srow-head"><div class="lbl">Complexity</div><div class="val" id="hs-cpx-val">50%</div></div><input type="range" id="hs-cpx-sl" min="0" max="100" value="50"></div>
-        <div class="srow"><div class="srow-head"><div class="lbl">Chaos</div><div class="val" id="hs-chaos-val">0%</div></div><input type="range" id="hs-chaos-sl" min="0" max="100" value="0"></div>
-        <button class="btn" id="hs-gen-btn" style="margin-top:6px;">⟳ Generate Progression</button>
-        <button class="btn amb" id="hs-shuf-btn" style="margin-top:4px;">⚄ Shuffle Rhythms</button>
-        <button class="btn" id="hs-rewind-btn" style="margin-top:4px;">⏮ Rewind</button>
+        <div class="srow"><div class="srow-head"><div class="lbl" title="Higher values allow secondary dominants and borrowed chords, not just plain diatonic chords">Complexity</div><div class="val" id="hs-cpx-val">50%</div></div><input type="range" id="hs-cpx-sl" min="0" max="100" value="50" title="Higher values allow secondary dominants and borrowed chords, not just plain diatonic chords"></div>
+        <div class="srow"><div class="srow-head"><div class="lbl" title="Higher values add more variation in chord slot durations">Chaos</div><div class="val" id="hs-chaos-val">0%</div></div><input type="range" id="hs-chaos-sl" min="0" max="100" value="0" title="Higher values add more variation in chord slot durations"></div>
+        <button class="btn" id="hs-gen-btn" style="margin-top:6px;" title="Generate a new chord progression across all unlocked slots">⟳ Generate Progression</button>
+        <button class="btn amb" id="hs-shuf-btn" style="margin-top:4px;" title="Randomize each unlocked slot's duration">⚄ Shuffle Rhythms</button>
+        <button class="btn" id="hs-rewind-btn" style="margin-top:4px;" title="Jump playback back to the first slot">⏮ Rewind</button>
         <div style="font-size:9px;color:var(--tdim);margin-top:6px;border-top:1px solid var(--border);padding-top:6px;line-height:1.6;"><b style="color:var(--tmid);">Left-click</b> slot = chord picker &nbsp;<b style="color:var(--tmid);">Drag edge</b> = resize<br><b style="color:var(--tmid);">Right-click</b> = clear &nbsp;<b style="color:var(--accent2);">Right-click filled</b> = lock</div>
       </div>
     </div>
@@ -633,19 +633,19 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
         </select>
       </div>
       <div class="row" style="justify-content:space-between;">
-        <div class="lbl">MIDI Clock</div>
+        <div class="lbl" title="Send MIDI clock/start/stop messages to sync external gear">MIDI Clock</div>
         <div class="tgg" style="width:auto;">
           <button class="tg" id="clk-off" onclick="setMidiClock(false)">Off</button>
           <button class="tg on" id="clk-on" onclick="setMidiClock(true)">On</button>
         </div>
       </div>
       <div class="srow">
-        <div class="srow-head"><div class="lbl">Velocity</div><div class="val" id="vel-val">100</div></div>
-        <input type="range" id="vel-sl" min="1" max="127" value="100">
+        <div class="srow-head"><div class="lbl" title="Default MIDI velocity for triggered notes">Velocity</div><div class="val" id="vel-val">100</div></div>
+        <input type="range" id="vel-sl" min="1" max="127" value="100" title="Default MIDI velocity for triggered notes">
       </div>
       <div class="srow">
-        <div class="srow-head"><div class="lbl">Note len</div><div class="val" id="len-val">80ms</div></div>
-        <input type="range" id="len-sl" min="10" max="500" value="80">
+        <div class="srow-head"><div class="lbl" title="How long a MIDI note-on holds before its automatic note-off">Note len</div><div class="val" id="len-val">80ms</div></div>
+        <input type="range" id="len-sl" min="10" max="500" value="80" title="How long a MIDI note-on holds before its automatic note-off">
       </div>
     </div>
   </div>
@@ -669,89 +669,89 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
         </div>
       </div>
       <div class="row" style="justify-content:space-between;margin-top:6px;">
-        <div class="lbl">Engine</div>
+        <div class="lbl" title="Turns the built-in synth on/off; MIDI output is unaffected">Engine</div>
         <div class="tgg" style="width:auto;"><button class="tg" id="eng-off" onclick="setEngine(false)">Off</button><button class="tg on" id="eng-on" onclick="setEngine(true)">On</button></div>
       </div>
 
       <div class="lbl" style="margin-top:4px;color:var(--tmid);">— Oscillators —</div>
       <div class="lbl" style="margin-top:2px;font-size:8px;color:var(--tdim);">OSC 1</div>
       <div class="wavebtns">
-        <button class="wbtn on" id="wv-sine" onclick="setWave('sine')">Sine</button>
-        <button class="wbtn" id="wv-triangle" onclick="setWave('triangle')">Tri</button>
-        <button class="wbtn" id="wv-sawtooth" onclick="setWave('sawtooth')">Saw</button>
-        <button class="wbtn" id="wv-square" onclick="setWave('square')">Sqr</button>
+        <button class="wbtn on" id="wv-sine" onclick="setWave('sine')" title="Sine wave — smooth, no harmonics">Sine</button>
+        <button class="wbtn" id="wv-triangle" onclick="setWave('triangle')" title="Triangle wave — soft, mellow harmonics">Tri</button>
+        <button class="wbtn" id="wv-sawtooth" onclick="setWave('sawtooth')" title="Sawtooth wave — bright, buzzy, full harmonic series">Saw</button>
+        <button class="wbtn" id="wv-square" onclick="setWave('square')" title="Square wave — hollow, reedy, odd harmonics only">Sqr</button>
       </div>
       <div class="lbl" style="margin-top:2px;font-size:8px;color:var(--tdim);">OSC 2</div>
       <div class="wavebtns">
-        <button class="wbtn on" id="wv2-sine" onclick="setWave2('sine')">Sine</button>
-        <button class="wbtn" id="wv2-triangle" onclick="setWave2('triangle')">Tri</button>
-        <button class="wbtn" id="wv2-sawtooth" onclick="setWave2('sawtooth')">Saw</button>
-        <button class="wbtn" id="wv2-square" onclick="setWave2('square')">Sqr</button>
+        <button class="wbtn on" id="wv2-sine" onclick="setWave2('sine')" title="Sine wave — smooth, no harmonics">Sine</button>
+        <button class="wbtn" id="wv2-triangle" onclick="setWave2('triangle')" title="Triangle wave — soft, mellow harmonics">Tri</button>
+        <button class="wbtn" id="wv2-sawtooth" onclick="setWave2('sawtooth')" title="Sawtooth wave — bright, buzzy, full harmonic series">Saw</button>
+        <button class="wbtn" id="wv2-square" onclick="setWave2('square')" title="Square wave — hollow, reedy, odd harmonics only">Sqr</button>
       </div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Osc 2 Oct</div><div class="val" id="osc2oct-val">0</div></div>
-        <input type="range" id="osc2oct-sl" min="-2" max="2" value="0" step="1"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Osc 2 Mix</div><div class="val" id="osc2mix-val">50%</div></div>
-        <input type="range" id="osc2mix-sl" min="0" max="100" value="50"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Detune</div><div class="val" id="detune-val">0¢</div></div>
-        <input type="range" id="detune-sl" min="0" max="50" value="0"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Osc 2's pitch offset in octaves relative to Osc 1">Osc 2 Oct</div><div class="val" id="osc2oct-val">0</div></div>
+        <input type="range" id="osc2oct-sl" min="-2" max="2" value="0" step="1" title="Osc 2's pitch offset in octaves relative to Osc 1"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Balance between Osc 1 and Osc 2 in the mix">Osc 2 Mix</div><div class="val" id="osc2mix-val">50%</div></div>
+        <input type="range" id="osc2mix-sl" min="0" max="100" value="50" title="Balance between Osc 1 and Osc 2 in the mix"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Detunes the two oscillators apart for a thicker, chorused sound">Detune</div><div class="val" id="detune-val">0¢</div></div>
+        <input type="range" id="detune-sl" min="0" max="50" value="0" title="Detunes the two oscillators apart for a thicker, chorused sound"></div>
 
       <div class="lbl" style="margin-top:4px;color:var(--tmid);">— Filter —</div>
       <div class="tgg" style="margin-bottom:4px;">
-        <button class="tg on" id="flt-lp" onclick="setFilterType('lowpass')">LP</button>
-        <button class="tg" id="flt-hp" onclick="setFilterType('highpass')">HP</button>
-        <button class="tg" id="flt-bp" onclick="setFilterType('bandpass')">BP</button>
+        <button class="tg on" id="flt-lp" onclick="setFilterType('lowpass')" title="Low-pass — cuts frequencies above the cutoff">LP</button>
+        <button class="tg" id="flt-hp" onclick="setFilterType('highpass')" title="High-pass — cuts frequencies below the cutoff">HP</button>
+        <button class="tg" id="flt-bp" onclick="setFilterType('bandpass')" title="Band-pass — keeps only frequencies near the cutoff">BP</button>
       </div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Cutoff</div><div class="val" id="flt-cut-val">2.0k</div></div>
-        <input type="range" id="flt-cut-sl" min="0" max="100" value="60" step="1"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Resonance</div><div class="val" id="flt-res-val">1.0</div></div>
-        <input type="range" id="flt-res-sl" min="0.1" max="20" value="1" step="0.1"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Env Amt</div><div class="val" id="flt-env-val">0%</div></div>
-        <input type="range" id="flt-env-sl" min="0" max="100" value="0"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Filter cutoff frequency">Cutoff</div><div class="val" id="flt-cut-val">2.0k</div></div>
+        <input type="range" id="flt-cut-sl" min="0" max="100" value="60" step="1" title="Filter cutoff frequency"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="How sharply the filter emphasizes frequencies near the cutoff">Resonance</div><div class="val" id="flt-res-val">1.0</div></div>
+        <input type="range" id="flt-res-sl" min="0.1" max="20" value="1" step="0.1" title="How sharply the filter emphasizes frequencies near the cutoff"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="How much the ADSR envelope sweeps the filter cutoff on each note">Env Amt</div><div class="val" id="flt-env-val">0%</div></div>
+        <input type="range" id="flt-env-sl" min="0" max="100" value="0" title="How much the ADSR envelope sweeps the filter cutoff on each note"></div>
 
       <div class="lbl" style="margin-top:4px;color:var(--tmid);">— ADSR —</div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Attack</div><div class="val" id="atk-val">10ms</div></div>
-        <input type="range" id="atk-sl" min="1" max="2000" value="10"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Decay</div><div class="val" id="dcy-val">100ms</div></div>
-        <input type="range" id="dcy-sl" min="10" max="2000" value="100"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Sustain</div><div class="val" id="sus-val">70%</div></div>
-        <input type="range" id="sus-sl" min="0" max="100" value="70"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Release</div><div class="val" id="rel-val">300ms</div></div>
-        <input type="range" id="rel-sl" min="10" max="4000" value="300"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Time for a note to reach full volume after triggering">Attack</div><div class="val" id="atk-val">10ms</div></div>
+        <input type="range" id="atk-sl" min="1" max="2000" value="10" title="Time for a note to reach full volume after triggering"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Time to fall from peak volume down to the sustain level">Decay</div><div class="val" id="dcy-val">100ms</div></div>
+        <input type="range" id="dcy-sl" min="10" max="2000" value="100" title="Time to fall from peak volume down to the sustain level"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Volume level held while a note stays on">Sustain</div><div class="val" id="sus-val">70%</div></div>
+        <input type="range" id="sus-sl" min="0" max="100" value="70" title="Volume level held while a note stays on"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Time for a note to fade to silence after it ends">Release</div><div class="val" id="rel-val">300ms</div></div>
+        <input type="range" id="rel-sl" min="10" max="4000" value="300" title="Time for a note to fade to silence after it ends"></div>
 
       <div class="lbl" style="margin-top:4px;color:var(--tmid);">— LFO —</div>
       <div class="tgg" style="margin-bottom:4px;">
-        <button class="tg on" id="lfo-sine" onclick="setLfoShape('sine')">Sine</button>
-        <button class="tg" id="lfo-triangle" onclick="setLfoShape('triangle')">Tri</button>
-        <button class="tg" id="lfo-sawtooth" onclick="setLfoShape('sawtooth')">Saw</button>
+        <button class="tg on" id="lfo-sine" onclick="setLfoShape('sine')" title="Sine wave LFO shape">Sine</button>
+        <button class="tg" id="lfo-triangle" onclick="setLfoShape('triangle')" title="Triangle wave LFO shape">Tri</button>
+        <button class="tg" id="lfo-sawtooth" onclick="setLfoShape('sawtooth')" title="Sawtooth wave LFO shape">Saw</button>
       </div>
       <div class="tgg" style="margin-bottom:4px;">
-        <button class="tg on" id="lfo-pitch" onclick="setLfoTarget('pitch')">Pitch</button>
-        <button class="tg" id="lfo-cutoff" onclick="setLfoTarget('cutoff')">Cutoff</button>
-        <button class="tg" id="lfo-amp" onclick="setLfoTarget('amp')">Amp</button>
+        <button class="tg on" id="lfo-pitch" onclick="setLfoTarget('pitch')" title="LFO modulates pitch (vibrato)">Pitch</button>
+        <button class="tg" id="lfo-cutoff" onclick="setLfoTarget('cutoff')" title="LFO modulates filter cutoff (wah)">Cutoff</button>
+        <button class="tg" id="lfo-amp" onclick="setLfoTarget('amp')" title="LFO modulates volume (tremolo)">Amp</button>
       </div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Rate</div><div class="val" id="lfo-rate-val">2.0Hz</div></div>
-        <input type="range" id="lfo-rate-sl" min="0.1" max="20" value="2" step="0.1"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Depth</div><div class="val" id="lfo-depth-val">0</div></div>
-        <input type="range" id="lfo-depth-sl" min="0" max="100" value="0"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="LFO speed">Rate</div><div class="val" id="lfo-rate-val">2.0Hz</div></div>
+        <input type="range" id="lfo-rate-sl" min="0.1" max="20" value="2" step="0.1" title="LFO speed"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="How strongly the LFO affects its target">Depth</div><div class="val" id="lfo-depth-val">0</div></div>
+        <input type="range" id="lfo-depth-sl" min="0" max="100" value="0" title="How strongly the LFO affects its target"></div>
 
       <div class="lbl" style="margin-top:4px;color:var(--tmid);">— Effects —</div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Volume</div><div class="val" id="vol-val">70%</div></div>
-        <input type="range" id="vol-sl" min="0" max="100" value="70"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Reverb</div><div class="val" id="rvb-val">20%</div></div>
-        <input type="range" id="rvb-sl" min="0" max="100" value="20"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Delay</div><div class="val" id="dly-val">0%</div></div>
-        <input type="range" id="dly-sl" min="0" max="100" value="0"></div>
-      <div class="srow"><div class="srow-head"><div class="lbl">Dly Time</div><div class="val" id="dlytime-val">½</div></div>
-        <input type="range" id="dlytime-sl" min="1" max="11" value="4" step="1"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Overall output volume">Volume</div><div class="val" id="vol-val">70%</div></div>
+        <input type="range" id="vol-sl" min="0" max="100" value="70" title="Overall output volume"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Amount of reverb wash added to the signal">Reverb</div><div class="val" id="rvb-val">20%</div></div>
+        <input type="range" id="rvb-sl" min="0" max="100" value="20" title="Amount of reverb wash added to the signal"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Amount of BPM-synced delay/echo mixed in">Delay</div><div class="val" id="dly-val">0%</div></div>
+        <input type="range" id="dly-sl" min="0" max="100" value="0" title="Amount of BPM-synced delay/echo mixed in"></div>
+      <div class="srow"><div class="srow-head"><div class="lbl" title="Delay repeat time as a note division, synced to BPM">Dly Time</div><div class="val" id="dlytime-val">½</div></div>
+        <input type="range" id="dlytime-sl" min="1" max="11" value="4" step="1" title="Delay repeat time as a note division, synced to BPM"></div>
     </div>
   </div>
 
   <div class="pane shut" id="pane-grid">
     <div class="ph" onclick="tp('pane-grid')"><span class="ptitle">Grid Size</span><span class="parr">▾</span></div>
     <div class="pbody">
-      <div class="row"><div class="lbl">Cols</div><input type="number" id="cols-in" min="4" max="64" value="24"></div>
-      <div class="row"><div class="lbl">Rows</div><input type="number" id="rows-in" min="4" max="48" value="16"></div>
-      <button class="btn" id="btn-resize">Apply</button>
+      <div class="row"><div class="lbl" title="Number of columns (steps) in the grid">Cols</div><input type="number" id="cols-in" min="4" max="64" value="24" title="Number of columns (steps) in the grid"></div>
+      <div class="row"><div class="lbl" title="Number of rows (pitches) in the grid">Rows</div><input type="number" id="rows-in" min="4" max="48" value="16" title="Number of rows (pitches) in the grid"></div>
+      <button class="btn" id="btn-resize" title="Resize the grid to the Cols/Rows above">Apply</button>
     </div>
   </div>
 </div>
@@ -780,7 +780,7 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
     </div>
     <div class="tb-sec" style="margin-left:auto;border-left:1px solid var(--border);border-right:none;">
       <div class="tb-lbl">BPM</div>
-      <input type="range" id="bpm-sl" min="20" max="240" value="120" style="width:80px;">
+      <input type="range" id="bpm-sl" min="20" max="240" value="120" style="width:80px;" title="Playback tempo in beats per minute">
       <span id="bpm-disp" style="font-size:11px;color:var(--accent);min-width:28px;">120</span>
     </div>
     <div class="tb-sec" style="border-left:1px solid var(--border);border-right:none;">
@@ -791,8 +791,8 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
     </div>
   </div>
   <div id="canvas-wrap">
-    <div class="ptog" id="tl" onclick="togglePanel('left')">◀</div>
-    <div class="ptog" id="tr" onclick="togglePanel('right')">▶</div>
+    <div class="ptog" id="tl" onclick="togglePanel('left')" title="Show/hide the left control panel">◀</div>
+    <div class="ptog" id="tr" onclick="togglePanel('right')" title="Show/hide the right control panel">▶</div>
     <canvas id="gc"></canvas>
     <div class="hud" id="hud01"><span><b id="m-alive">0</b> alive</span><span><b id="m-born">0</b> born</span><span><b id="m-gen">0</b> gen</span></div>
     <div class="hud" id="hud02" style="display:none;"><span><b id="m-notes">0</b> notes</span></div>
@@ -817,16 +817,16 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
     <div class="pane" id="pane-transport">
       <div class="ph" onclick="tp('pane-transport')"><span class="ptitle">Transport</span><span class="parr">▾</span></div>
       <div class="pbody">
-        <div class="brow"><button class="btn" id="btn-play">▶ Play</button><button class="btn" id="btn-step">Step</button></div>
-        <div class="brow"><button class="btn amb" id="btn-rand">Rand</button><button class="btn red" id="btn-clear">Clear</button></div>
+        <div class="brow"><button class="btn" id="btn-play" title="Start/pause playback">▶ Play</button><button class="btn" id="btn-step" title="Advance one generation/step manually">Step</button></div>
+        <div class="brow"><button class="btn amb" id="btn-rand" title="Randomize the current program's pattern">Rand</button><button class="btn red" id="btn-clear" title="Clear the current program's pattern">Clear</button></div>
       </div>
     </div>
     <div class="pane" id="pane-osc">
       <div class="ph" onclick="tp('pane-osc');startOsc()"><span class="ptitle">Oscilloscope</span><span class="parr">▾</span></div>
       <div class="pbody" style="padding:8px;">
         <div class="tgg" style="margin-bottom:6px;">
-          <button class="tg on" id="osc-scope" onclick="setOscMode('scope')">Scope</button>
-          <button class="tg" id="osc-liss" onclick="setOscMode('liss')">Lissajous</button>
+          <button class="tg on" id="osc-scope" onclick="setOscMode('scope')" title="Show the waveform over time">Scope</button>
+          <button class="tg" id="osc-liss" onclick="setOscMode('liss')" title="Show left/right channels plotted against each other">Lissajous</button>
         </div>
         <canvas id="osc-canvas" height="80"></canvas>
       </div>
@@ -885,6 +885,7 @@ let midiAccess=null,midiOut=null,midiClockOn=true;
 let panelVis={left:true,right:true};
 let oscMode='scope',oscRaf=null;
 let trigMode='born';
+let p01SustainAlive=true; // EXPERIMENT: surviving cells hold a sustained note instead of retriggering each generation. Set to false to instantly revert to the old discrete-retrigger behavior.
 
 // ═══ EUCLIDEAN ═════════════════════════════════════════════════════════════
 function euclidean(k,n){
@@ -965,7 +966,7 @@ function renderEucStepViz(r,el){
 // ═══ PROGRAM 01 — CONWAY ══════════════════════════════════════════════════
 const p01={
   cells:null,divs:null,prev:null,gen:0,dragging:false,drawVal:1,tick32:0,
-  init(){this.cells=new Uint8Array(ROWS*COLS);this.divs=new Uint8Array(ROWS*COLS).fill(4);this.prev=new Uint8Array(ROWS*COLS);this.gen=0;this.tick32=0;setCounter('0000','Generation');},
+  init(){this.cells=new Uint8Array(ROWS*COLS);this.divs=new Uint8Array(ROWS*COLS).fill(4);this.prev=new Uint8Array(ROWS*COLS);this.gen=0;this.tick32=0;this._releaseHeld?.();this._rowHeld=new Map();setCounter('0000','Generation');},
   divFires(d){const p={1:32,2:16,4:8,8:4,16:2,32:1}[d]||8;return this.tick32%p===0;},
   step(){
     this.tick32=(this.tick32+1)%32;
@@ -978,21 +979,48 @@ const p01={
     }
     this.prev=this.cells.slice();this.cells=next;this.divs=nd;this.gen++;
     setCounter(String(this.gen).padStart(4,'0'),'Generation');
-    // fire with dedup + velocity shaping
-    const cands=[];
-    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-      const cur=this.cells[r*COLS+c],was=this.prev[r*COLS+c];
-      const born=cur&&!was,alive2=cur&&was;
-      const t=trigMode==='born'?born:trigMode==='alive'?!!cur:born||alive2;
-      if(t&&this.divFires(this.divs[r*COLS+c])){
-        const vel=born?Math.min(127,90+Math.floor(Math.random()*30)):Math.max(40,70-Math.floor(Math.random()*20));
-        cands.push({note:noteMap[r]??60,vel,r});
+    if(!this._rowHeld)this._rowHeld=new Map(); // row -> notes[] currently sustained (EXPERIMENT state)
+    const fired=new Set();
+    if(p01SustainAlive&&trigMode!=='born'){
+      // EXPERIMENT: hold a note for as long as a row has a living cell — only re-articulate on birth/death, no per-generation retrigger
+      for(let r=0;r<ROWS;r++){
+        let bornHere=false,aliveNow=false;
+        for(let c=0;c<COLS;c++){
+          const cur=this.cells[r*COLS+c],was=this.prev[r*COLS+c];
+          if(cur)aliveNow=true;
+          if(cur&&!was&&this.divFires(this.divs[r*COLS+c]))bornHere=true;
+        }
+        const held=this._rowHeld.get(r);
+        if(bornHere&&!held){
+          const root=noteMap[r]??60,vel=Math.min(127,90+Math.floor(Math.random()*30));
+          const notes=getChordNotes(root,r);
+          notes.forEach(n=>{midiNoteOn(n,vel,true);if(audioEnabled){ensureAudio();_playLong(n,vel);}});
+          this._rowHeld.set(r,notes);
+          fired.add(root);
+        } else if(!aliveNow&&held){
+          held.forEach(n=>{midiNoteOff(n);_stopLong(n);});
+          this._rowHeld.delete(r);
+        }
+        // aliveNow && already held -> sustain continues, no retrigger
       }
-    }
-    cands.sort((a,b)=>b.vel-a.vel);
-    const fired=new Set(),firedMidi=[];
-    for(const{note,vel,r}of cands){
-      if(!firedMidi.some(n=>Math.abs(n-note)<3)&&!fired.has(note)){fired.add(note);firedMidi.push(note);trigNote(note,vel,r);}
+      _flashMidiDot();
+    } else {
+      // Original discrete-retrigger behavior — always used for Born mode, or if the sustain experiment is toggled off
+      const cands=[];
+      for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+        const cur=this.cells[r*COLS+c],was=this.prev[r*COLS+c];
+        const born=cur&&!was,alive2=cur&&was;
+        const t=trigMode==='born'?born:trigMode==='alive'?!!cur:born||alive2;
+        if(t&&this.divFires(this.divs[r*COLS+c])){
+          const vel=born?Math.min(127,90+Math.floor(Math.random()*30)):Math.max(40,70-Math.floor(Math.random()*20));
+          cands.push({note:noteMap[r]??60,vel,r});
+        }
+      }
+      cands.sort((a,b)=>b.vel-a.vel);
+      const firedMidi=[];
+      for(const{note,vel,r}of cands){
+        if(!firedMidi.some(n=>Math.abs(n-note)<3)&&!fired.has(note)){fired.add(note);firedMidi.push(note);trigNote(note,vel,r);}
+      }
     }
     flashNotes(fired);
     let alive=0,born=0;
@@ -1000,8 +1028,13 @@ const p01={
     document.getElementById('m-alive').textContent=alive;document.getElementById('m-born').textContent=born;document.getElementById('m-gen').textContent=this.gen;
     this.draw();
   },
-  randomize(){for(let i=0;i<this.cells.length;i++){this.cells[i]=Math.random()<0.3?1:0;this.divs[i]=[1,2,4,4,4,8,8,16][Math.floor(Math.random()*8)];}this.prev.fill(0);this.gen=0;setCounter('0000','Generation');this.draw();},
-  clear(){this.cells.fill(0);this.divs.fill(4);this.prev.fill(0);this.gen=0;setCounter('0000','Generation');midiAllOff();this.draw();},
+  _releaseHeld(){ // release any sustained notes from the Mode 1 sustain experiment
+    if(!this._rowHeld)return;
+    this._rowHeld.forEach(notes=>notes.forEach(n=>{midiNoteOff(n);_stopLong(n);}));
+    this._rowHeld.clear();
+  },
+  randomize(){this._releaseHeld();for(let i=0;i<this.cells.length;i++){this.cells[i]=Math.random()<0.3?1:0;this.divs[i]=[1,2,4,4,4,8,8,16][Math.floor(Math.random()*8)];}this.prev.fill(0);this.gen=0;setCounter('0000','Generation');this.draw();},
+  clear(){this._releaseHeld();this.cells.fill(0);this.divs.fill(4);this.prev.fill(0);this.gen=0;setCounter('0000','Generation');midiAllOff();this.draw();},
   draw(){
     if(!ctx)return;ctx.fillStyle='#060604';ctx.fillRect(0,0,canvas.width,canvas.height);
     for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
@@ -2398,12 +2431,16 @@ const p06={
       this._openOpMenu(cx,cy,r,c);
       return;
     }
-    // Left-click = erase (toggle off)
     if(this.grid[r*COLS+c]>0){
+      // Left-click on a filled cell = erase (toggle off)
       this.grid[r*COLS+c]=0;
       this.genState.delete(key);
       this.counterState.delete(key);
       this.midiTrigState.delete(key);
+    } else {
+      // Left-click on an empty cell = open operator picker to place one
+      this._openOpMenu(cx,cy,r,c);
+      return;
     }
     this.dragging=true;this.draw();
   },
@@ -3058,7 +3095,7 @@ const p09={
     const ivs=(this._TYPES[entry.q]||this._TYPES.maj)[0];
     return ivs.slice(0,this.numVoices).map(iv=>Math.max(0,Math.min(127,rootMidi+iv)));
   },
-  _voiceLead(from,to){if(!from||!from.length)return to;const used=new Array(to.length).fill(false);const result=[...to];for(let i=0;i<Math.min(from.length,to.length);i++){let best=-1,bestD=999;for(let j=0;j<to.length;j++){if(used[j])continue;const d=Math.abs(from[i]-to[j]);if(d<bestD){bestD=d;best=j;}}if(best>=0)used[best]=true;}return to;},
+  _voiceLead(from,to){if(!from||!from.length)return to;const used=new Array(to.length).fill(false);const result=[...to];for(let i=0;i<Math.min(from.length,to.length);i++){let best=-1,bestD=999;for(let j=0;j<to.length;j++){if(used[j])continue;const d=Math.abs(from[i]-to[j]);if(d<bestD){bestD=d;best=j;}}if(best>=0){used[best]=true;result[i]=to[best];}}return result;},
   _pickChordType(degree,cpx,scaleName){
     const diat=this._DIATONIC[scaleName]||this._DIATONIC.ionian;
     const base=diat[degree]||['maj','?'];
@@ -3404,6 +3441,7 @@ function stopT(){
   stopMidiClock();sendMidiStop();
   // Release any sustained notes from modes that hold them
   if(typeof p09!=='undefined'&&p09._releaseActive)p09._releaseActive();
+  if(typeof p01!=='undefined'&&p01._releaseHeld)p01._releaseHeld();
   document.getElementById('btn-play').textContent='▶ Play';
   document.getElementById('btn-play').classList.remove('on');
 }
@@ -3525,7 +3563,7 @@ function setBrushDiv(d){
 }
 function setP0xErase(on){p0xEraseMode=on;const btn=document.getElementById('tb-erase-btn');if(btn)btn.classList.toggle('on',on);}
 function setTrig(m){
-  trigMode=m;const desc={born:'New cells only.',alive:'All living cells.',both:'Born + surviving.'};
+  trigMode=m;const desc={born:'New cells only.',alive:'Notes hold while a row stays alive.',both:'Born starts the hold; surviving cells sustain.'};
   document.getElementById('trig-desc').textContent=desc[m];
   ['born','alive','both'].forEach(x=>{document.getElementById('trig-'+x).classList.toggle('on',x===m);document.getElementById('ttrig-'+x).classList.toggle('on',x===m);});
 }
@@ -3756,6 +3794,18 @@ const PRESETS=[
         {k:0, n:8, muted:false,octShift:0},
         {k:2, n:4, muted:false,octShift:0},
         {k:2, n:8, muted:false,octShift:0},
+      ]}},
+  },
+  {
+    name:'Four Lane Polymeter',
+    desc:'Poly Weaver — four independent lanes of length 3, 4, 5, and 7 steps drifting in and out of phase with each other',
+    data:{version:4,prog:7,bpm:87,clockDiv:2,root:'0',scale:'ionian',oct:'3',range:'3',
+      chordMode:true,chordPerRow:['none','none','none','none','none','none','none','none','none','none','none','none','none','none','none','none'],
+      p07:{lanes:[
+        {len:3,muted:false,notes:[7,-1,5],tied:[0,0,0]},
+        {len:4,muted:false,notes:[14,-1,-1,-1],tied:[0,0,0,0]},
+        {len:5,muted:false,notes:[11,13,-1,-1,11],tied:[0,0,0,0,0]},
+        {len:7,muted:false,notes:[-1,12,7,2,-1,1,-1],tied:[0,0,0,0,0,0,0]},
       ]}},
   },
 ];
