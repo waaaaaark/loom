@@ -557,7 +557,7 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
             <input type="range" id="dw-thresh-sl" min="1" max="99" value="50">
           </div>
           <div class="row" style="justify-content:space-between;margin-top:2px;">
-            <div class="lbl">Invert</div>
+            <div class="lbl" title="Flip which pixels (light vs dark) count as filled when applying an image">Invert</div>
             <div class="tgg" style="width:auto;">
               <button class="tg" id="dw-inv-on">On</button>
               <button class="tg on" id="dw-inv-off">Off</button>
@@ -573,19 +573,19 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
           <input type="range" id="dw-cursors-sl" min="1" max="8" value="3" step="1">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">H Bias →</div><div class="val" id="dw-hbias-val">0</div></div>
+          <div class="srow-head"><div class="lbl" title="Weights cursor movement toward the right (positive) or left (negative)">H Bias →</div><div class="val" id="dw-hbias-val">0</div></div>
           <input type="range" id="dw-hbias-sl" min="-4" max="4" value="0" step="1">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">V Bias ↓</div><div class="val" id="dw-vbias-val">0</div></div>
+          <div class="srow-head"><div class="lbl" title="Weights cursor movement toward down (positive) or up (negative)">V Bias ↓</div><div class="val" id="dw-vbias-val">0</div></div>
           <input type="range" id="dw-vbias-sl" min="-4" max="4" value="0" step="1">
         </div>
         <div class="srow">
-          <div class="srow-head"><div class="lbl">Jump %</div><div class="val" id="dw-jump-val">10%</div></div>
+          <div class="srow-head"><div class="lbl" title="Chance per step that a cursor jumps to a random cell instead of walking">Jump %</div><div class="val" id="dw-jump-val">10%</div></div>
           <input type="range" id="dw-jump-sl" min="0" max="50" value="10">
         </div>
         <div class="row" style="justify-content:space-between;margin-top:2px;">
-          <div class="lbl">Wrap</div>
+          <div class="lbl" title="When a cursor walks off the edge of the grid, wrap it to the opposite side instead of stopping">Wrap</div>
           <div class="tgg" style="width:auto;">
             <button class="tg on" id="dw-wrap-on">On</button>
             <button class="tg" id="dw-wrap-off">Off</button>
@@ -605,9 +605,9 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
         <div class="lbl" style="margin-top:6px;color:var(--tmid);">— Playback —</div>
         <div class="srow"><div class="srow-head"><div class="lbl">Slots</div><div class="val" id="hs-slots-val">4</div></div><input type="range" id="hs-slots-sl" min="2" max="16" value="4" step="1"></div>
         <div class="srow"><div class="srow-head"><div class="lbl">Voices</div><div class="val" id="hs-voices-val">4</div></div><input type="range" id="hs-voices-sl" min="2" max="5" value="4" step="1"></div>
-        <div class="row" style="justify-content:space-between;"><div class="lbl">Sustain</div><div class="tgg" style="width:auto;"><button class="tg" id="hs-sus-on">On</button><button class="tg on" id="hs-sus-off">Off</button></div></div>
-        <div class="row" style="justify-content:space-between;margin-top:2px;"><div class="lbl">Strum</div><div class="tgg" style="width:auto;"><button class="tg" id="hs-strum-on">On</button><button class="tg on" id="hs-strum-off">Off</button></div></div>
-        <div class="row" style="justify-content:space-between;margin-top:2px;"><div class="lbl">Loop</div><div class="tgg" style="width:auto;"><button class="tg on" id="hs-loop-on">On</button><button class="tg" id="hs-loop-off">Off</button></div></div>
+        <div class="row" style="justify-content:space-between;"><div class="lbl" title="Hold each chord until the next one fires, instead of cutting it off">Sustain</div><div class="tgg" style="width:auto;"><button class="tg" id="hs-sus-on">On</button><button class="tg on" id="hs-sus-off">Off</button></div></div>
+        <div class="row" style="justify-content:space-between;margin-top:2px;"><div class="lbl" title="Play each chord's notes slightly staggered instead of all at once">Strum</div><div class="tgg" style="width:auto;"><button class="tg" id="hs-strum-on">On</button><button class="tg on" id="hs-strum-off">Off</button></div></div>
+        <div class="row" style="justify-content:space-between;margin-top:2px;"><div class="lbl" title="Loop back to the first slot after the last one plays">Loop</div><div class="tgg" style="width:auto;"><button class="tg on" id="hs-loop-on">On</button><button class="tg" id="hs-loop-off">Off</button></div></div>
         <div class="lbl" style="margin-top:6px;color:var(--tmid);">— Generate —</div>
         <div class="srow"><div class="srow-head"><div class="lbl">Complexity</div><div class="val" id="hs-cpx-val">50%</div></div><input type="range" id="hs-cpx-sl" min="0" max="100" value="50"></div>
         <div class="srow"><div class="srow-head"><div class="lbl">Chaos</div><div class="val" id="hs-chaos-val">0%</div></div><input type="range" id="hs-chaos-sl" min="0" max="100" value="0"></div>
@@ -652,24 +652,23 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
 
   <!-- audio engine -->
   <div class="pane" id="pane-audio">
-    <div class="ph" style="cursor:default;">
-      <span class="ptitle" onclick="tp('pane-audio')" style="cursor:pointer;">Audio Engine</span>
-      <select id="synth-preset-sel" title="Load a synth preset" style="font-size:9px;background:var(--black);border:1px solid var(--border);color:var(--tmid);font-family:var(--mono);padding:1px 3px;max-width:80px;" onchange="loadSynthPreset(this.value);this.value=''">
-        <option value="">— preset —</option>
-        <option value="pad">Pad</option>
-        <option value="pluck">Pluck</option>
-        <option value="bass">Bass</option>
-        <option value="lead">Lead</option>
-        <option value="organ">Organ</option>
-      </select>
-      <div style="display:flex;gap:3px;align-items:center;">
-        <button class="tb-btn" onclick="saveSynthPreset()" title="Save current synth settings to file" style="font-size:8px;padding:2px 5px;">Save</button>
-        <label class="tb-btn" style="font-size:8px;padding:2px 5px;cursor:pointer;" title="Load synth settings from file">Load<input type="file" accept=".json" id="synth-load-input" style="display:none;" onchange="loadSynthFile(this)"></label>
-      </div>
-      <span class="parr" onclick="tp('pane-audio')" style="cursor:pointer;">▾</span>
-    </div>
+    <div class="ph" onclick="tp('pane-audio')"><span class="ptitle">Audio Engine</span><span class="parr">▾</span></div>
     <div class="pbody">
-      <div class="row" style="justify-content:space-between;">
+      <div class="row" style="justify-content:space-between;gap:6px;">
+        <select id="synth-preset-sel" title="Load a synth preset" style="flex:1;min-width:0;font-size:9px;background:var(--black);border:1px solid var(--border);color:var(--tmid);font-family:var(--mono);padding:3px 4px;" onchange="loadSynthPreset(this.value);this.value=''">
+          <option value="">— preset —</option>
+          <option value="pad">Pad</option>
+          <option value="pluck">Pluck</option>
+          <option value="bass">Bass</option>
+          <option value="lead">Lead</option>
+          <option value="organ">Organ</option>
+        </select>
+        <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+          <button class="tb-btn" onclick="saveSynthPreset()" title="Save current synth settings to file" style="font-size:8px;padding:3px 6px;">Save</button>
+          <label class="tb-btn" style="font-size:8px;padding:3px 6px;cursor:pointer;" title="Load synth settings from file">Load<input type="file" accept=".json" id="synth-load-input" style="display:none;" onchange="loadSynthFile(this)"></label>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:6px;">
         <div class="lbl">Engine</div>
         <div class="tgg" style="width:auto;"><button class="tg" id="eng-off" onclick="setEngine(false)">Off</button><button class="tg on" id="eng-on" onclick="setEngine(true)">On</button></div>
       </div>
@@ -762,22 +761,22 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
   <div id="toolbar">
     <div class="tb-sec" id="tb-rhythm" style="gap:3px;">
       <div class="tb-lbl">Rhythm</div>
-      <button class="divbtn" data-d="1" onclick="setBrushDiv(1)">1</button>
-      <button class="divbtn" data-d="2" onclick="setBrushDiv(2)">½</button>
-      <button class="divbtn on" data-d="4" onclick="setBrushDiv(4)">¼</button>
-      <button class="divbtn" data-d="8" onclick="setBrushDiv(8)">⅛</button>
-      <button class="divbtn" data-d="16" onclick="setBrushDiv(16)">16</button>
-      <button class="divbtn" data-d="32" onclick="setBrushDiv(32)">32</button>
+      <button class="divbtn" data-d="1" onclick="setBrushDiv(1)" title="Whole note per cell">1</button>
+      <button class="divbtn" data-d="2" onclick="setBrushDiv(2)" title="Half note per cell">½</button>
+      <button class="divbtn on" data-d="4" onclick="setBrushDiv(4)" title="Quarter note per cell">¼</button>
+      <button class="divbtn" data-d="8" onclick="setBrushDiv(8)" title="Eighth note per cell">⅛</button>
+      <button class="divbtn" data-d="16" onclick="setBrushDiv(16)" title="Sixteenth note per cell">16</button>
+      <button class="divbtn" data-d="32" onclick="setBrushDiv(32)" title="Thirty-second note per cell">32</button>
     </div>
     <div class="tb-sec" id="tb-p02-erase" style="display:none;">
-      <button class="tog-btn" id="tb-erase-btn" onclick="setP0xErase(!p0xEraseMode)">Erase</button>
+      <button class="tog-btn" id="tb-erase-btn" onclick="setP0xErase(!p0xEraseMode)" title="Toggle erase mode for painting cells">Erase</button>
       <div class="tb-lbl" style="color:var(--tdim);font-size:8px;">or right-click</div>
     </div>
     <div class="tb-sec" id="tb-p01-trig" style="gap:4px;">
       <div class="tb-lbl">Trigger</div>
-      <button class="tog-btn on" id="ttrig-born" onclick="setTrig('born')">Born</button>
-      <button class="tog-btn" id="ttrig-alive" onclick="setTrig('alive')">Alive</button>
-      <button class="tog-btn" id="ttrig-both" onclick="setTrig('both')">Both</button>
+      <button class="tog-btn on" id="ttrig-born" onclick="setTrig('born')" title="Only newly-born cells trigger a note">Born</button>
+      <button class="tog-btn" id="ttrig-alive" onclick="setTrig('alive')" title="Only cells that survive a generation trigger a note">Alive</button>
+      <button class="tog-btn" id="ttrig-both" onclick="setTrig('both')" title="Both newly-born and surviving cells trigger a note">Both</button>
     </div>
     <div class="tb-sec" style="margin-left:auto;border-left:1px solid var(--border);border-right:none;">
       <div class="tb-lbl">BPM</div>
@@ -934,19 +933,15 @@ function renderEucRows(){
     mb.addEventListener('mousedown',e=>{e.stopPropagation();s.muted=!s.muted;mb.style.borderColor=s.muted?'#ff4040':'var(--accent)';mb.style.color=s.muted?'#ff4040':'var(--accent)';mb.textContent=s.muted?'OFF':'ON';p03obj.draw();});
     top.appendChild(mb);
     const nl=document.createElement('div');nl.style.cssText='font-size:9px;color:var(--tmid);min-width:26px;';nl.textContent=name;top.appendChild(nl);
-    const kl=document.createElement('span');kl.style.cssText='font-size:8px;color:var(--tdim);';kl.textContent='k';top.appendChild(kl);
-    const ki=document.createElement('input');ki.type='number';ki.min=0;ki.max=s.n;ki.value=s.k;ki.style.cssText='width:32px;font-size:9px;padding:2px 3px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
     const patDiv=document.createElement('div');patDiv.className='euc-pat';
-    ki.addEventListener('change',()=>{s.k=Math.max(0,Math.min(s.n,parseInt(ki.value)||0));s.pattern=euclidean(s.k,s.n);ki.value=s.k;renderEucStepViz(r,patDiv);p03obj.draw();});
-    top.appendChild(ki);
-    const nl2=document.createElement('span');nl2.style.cssText='font-size:8px;color:var(--tdim);';nl2.textContent='n';top.appendChild(nl2);
-    const ni=document.createElement('input');ni.type='number';ni.min=1;ni.max=32;ni.value=s.n;ni.style.cssText='width:32px;font-size:9px;padding:2px 3px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
-    ni.addEventListener('change',()=>{s.n=Math.max(1,Math.min(32,parseInt(ni.value)||8));s.k=Math.min(s.k,s.n);ki.value=s.k;ki.max=s.n;s.pattern=euclidean(s.k,s.n);ni.value=s.n;renderEucStepViz(r,patDiv);p03obj.draw();});
+    const nl2=document.createElement('span');nl2.style.cssText='font-size:8px;color:var(--tdim);';nl2.textContent='n';nl2.title='Number of steps in this row';top.appendChild(nl2);
+    const ni=document.createElement('input');ni.type='number';ni.min=1;ni.max=32;ni.value=s.n;ni.title='Number of steps in this row';ni.style.cssText='width:32px;font-size:9px;padding:2px 3px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
+    ni.addEventListener('change',()=>{s.n=Math.max(1,Math.min(32,parseInt(ni.value)||8));s.k=Math.min(s.k,s.n);s.pattern=euclidean(s.k,s.n);ni.value=s.n;renderEucStepViz(r,patDiv);p03obj.draw();});
     top.appendChild(ni);
     // octave
-    const od=document.createElement('button');od.style.cssText='background:none;border:1px solid var(--border);color:var(--tdim);font-family:var(--mono);font-size:9px;padding:1px 4px;cursor:pointer;';od.textContent='−';
+    const od=document.createElement('button');od.title='Shift this row down one octave';od.style.cssText='background:none;border:1px solid var(--border);color:var(--tdim);font-family:var(--mono);font-size:9px;padding:1px 4px;cursor:pointer;';od.textContent='−';
     od.addEventListener('click',()=>{s.octShift=Math.max(-4,s.octShift-1);renderEucRows();p03obj.draw();});
-    const ou=document.createElement('button');ou.style.cssText='background:none;border:1px solid var(--border);color:var(--tdim);font-family:var(--mono);font-size:9px;padding:1px 4px;cursor:pointer;';ou.textContent='+';
+    const ou=document.createElement('button');ou.title='Shift this row up one octave';ou.style.cssText='background:none;border:1px solid var(--border);color:var(--tdim);font-family:var(--mono);font-size:9px;padding:1px 4px;cursor:pointer;';ou.textContent='+';
     ou.addEventListener('click',()=>{s.octShift=Math.min(4,s.octShift+1);renderEucRows();p03obj.draw();});
     const ol=document.createElement('span');ol.style.cssText='font-size:9px;color:var(--accent);min-width:20px;text-align:center;';ol.textContent=(s.octShift>=0?'+':'')+s.octShift;
     top.appendChild(od);top.appendChild(ol);top.appendChild(ou);
@@ -1269,7 +1264,7 @@ const p04={
   // 32=whole,16=half,8=quarter,4=eighth,2=16th,1=32nd
   _SUBDIVS:[[8,'Quarter'],[4,'8th'],[2,'16th'],[1,'32nd']],
   init(){
-    if(!this.rows)this.rows=GM_DEFAULTS.map(d=>({name:d.name,note:d.note,ch:d.ch,steps:new Uint8Array(32).fill(0),stepCount:16,subdiv:8,tickAcc:0,muted:false,solo:false}));
+    if(!this.rows)this.rows=GM_DEFAULTS.map(d=>({name:d.name,note:d.note,ch:d.ch,steps:new Uint8Array(32).fill(0),stepCount:16,subdiv:2,tickAcc:0,muted:false,solo:false}));
     this.playStep=0;this.tick32=0;
     this.maxSteps=Math.max(...this.rows.map(r=>r.stepCount));
     setCounter('01','Step');this.renderGrid();
@@ -1796,7 +1791,6 @@ function killAllNotes(){
   }
   if(typeof _stopAllLong==='function')_stopAllLong();
   if(typeof p09!=='undefined')p09._activeNotes=[];
-  if(typeof p10!=='undefined')p10._activeNotes=[];
   // Flash the button to confirm
   const btn=document.getElementById('kill-all-btn');
   if(btn){btn.style.background='var(--accent)';btn.style.color='#000';setTimeout(()=>{btn.style.background='';btn.style.color='var(--accent)';},200);}
@@ -3376,7 +3370,7 @@ const p09={
 // To remove a mode: delete its entry from MODES and its launcher button from HTML.
 const MODES = {
   1: { id:1, label:'Conway',         obj:null, usesCanvas:true,  showRhythm:true,  showErase:false, showTrig:true,  showRand:true,  showStep:true,  showRail:true,  showNoteMap:true,  showCounter:true,  showGrid:true,  tickInterval:()=>tick32Ms() },
-  2: { id:2, label:'Step Seq',       obj:null, usesCanvas:true,  showRhythm:true,  showErase:true,  showTrig:false, showRand:false, showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  showGrid:true,  tickInterval:()=>tick32Ms() },
+  2: { id:2, label:'Step Seq',       obj:null, usesCanvas:true,  showRhythm:true,  showErase:true,  showTrig:false, showRand:false, showStep:false, showRail:false, showNoteMap:true,  showCounter:true,  showGrid:true,  tickInterval:()=>tick32Ms() },
   3: { id:3, label:'Euclidean',      obj:null, usesCanvas:true,  showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:true,  showNoteMap:true,  showCounter:true,  showGrid:true,  tickInterval:()=>tick32Ms() },
   4: { id:4, label:'Drums',          obj:null, usesCanvas:false, showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:false, showNoteMap:false, showCounter:true,  showGrid:false, tickInterval:()=>tick32Ms() },
   5: { id:5, label:'Multi-Grid',     obj:null, usesCanvas:false, showRhythm:false, showErase:false, showTrig:false, showRand:true,  showStep:false, showRail:false, showNoteMap:false, showCounter:false, showGrid:false, tickInterval:()=>tick32Ms() },
@@ -3564,7 +3558,6 @@ function savePattern(){
     p08:{cells:Array.from(p08.cells||[]),octaves:Array.from(p08.octaves||[]),rows:ROWS,cols:COLS,
       cursors:(p08.cursors||[]).map(cu=>({row:cu.row,col:cu.col,dx:cu.dx,dy:cu.dy,divider:cu.divider}))},
     p09:{slots:p09.slots.map(s=>({...s,notes:Array.from(s.notes||[])}))},
-    p10:{chords:p10.chords.map(ch=>({...ch,notes:Array.from(ch.notes||[])})),numChords:p10.numChords,complexity:p10.complexity,chaos:p10.chaos},
   };
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='loom-pattern.json';a.click();
   try{localStorage.setItem('loom_autosave',JSON.stringify(data));}catch(e){}
@@ -3705,7 +3698,6 @@ function _serializeState(){
     p04:{rows:(p04.rows||[]).map(r=>({...r,steps:Array.from(r.steps)}))},
     p08:{cells:Array.from(p08.cells||[]),octaves:Array.from(p08.octaves||[])},
     p09:{slots:p09.slots.map(s=>({...s}))},
-    p10:{chords:p10.chords.map(c=>({...c,notes:[...c.notes]}))},
   };
 }
 
@@ -3720,7 +3712,6 @@ function undo(){
     else if(currentProg===4&&prev.p04){p04.rows=prev.p04.rows.map(r=>({...r,steps:new Uint8Array(r.steps)}));p04.renderGrid();}
     else if(currentProg===8&&prev.p08){p08.cells=new Uint8Array(prev.p08.cells);p08.octaves=new Int8Array(prev.p08.octaves);p08.draw();}
     else if(currentProg===9&&prev.p09){p09.slots=prev.p09.slots.map(s=>({...s}));p09.playStep=0;p09.slotTick=0;p09.draw();}
-    else if(currentProg===10&&prev.p10){p10.chords=prev.p10.chords.map(c=>({...c,notes:[...c.notes]}));p10.playStep=0;p10.chordTick=0;p10.draw();}
   }
   markDirty();
   // Visual flash to confirm undo
@@ -4100,42 +4091,6 @@ function bindControls(){
     }
   },{passive:false});
 
-  // Left panel resizable via drag handle on right border
-  const cp=document.getElementById('cp');
-  const appEl=document.getElementById('app');
-  const handle=document.createElement('div');
-  handle.id='cp-resize-handle';
-  handle.style.cssText='position:fixed;width:8px;cursor:col-resize;z-index:200;top:0;bottom:0;background:transparent;';
-  document.body.appendChild(handle);
-
-  function _updateHandlePos(){
-    const r=cp.getBoundingClientRect();
-    handle.style.left=(r.right-4)+'px';
-    handle.style.top=r.top+'px';
-    handle.style.height=r.height+'px';
-  }
-
-  let _panelDragging=false,_panelStartX=0,_panelStartW=0;
-  handle.addEventListener('mousedown',e=>{
-    _panelDragging=true;_panelStartX=e.clientX;_panelStartW=cp.offsetWidth;
-    document.body.style.cursor='col-resize';document.body.style.userSelect='none';
-    e.preventDefault();
-  });
-  window.addEventListener('mousemove',e=>{
-    _updateHandlePos();
-    if(!_panelDragging)return;
-    const newW=Math.max(160,Math.min(400,_panelStartW+(e.clientX-_panelStartX)));
-    cp.style.width=newW+'px';cp.style.minWidth=newW+'px';cp.style.maxWidth=newW+'px';
-    _updateHandlePos();
-    try{localStorage.setItem('loom_panel_w',newW);}catch(err){}
-  },true);
-  window.addEventListener('mouseup',()=>{
-    if(_panelDragging){_panelDragging=false;document.body.style.cursor='';document.body.style.userSelect='';}
-  });
-  // Restore saved panel width
-  try{const pw=localStorage.getItem('loom_panel_w');if(pw){const w=parseInt(pw);cp.style.width=w+'px';cp.style.minWidth=w+'px';cp.style.maxWidth=w+'px';}}catch(err){}
-  // Position handle after layout settles
-  requestAnimationFrame(_updateHandlePos);
   window.addEventListener('resize',()=>{if(currentProg===5)p05.resizeCanvases();else resizeCv();});
 }
 
