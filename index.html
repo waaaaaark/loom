@@ -892,6 +892,7 @@ let panelVis={left:true,right:true};
 let oscMode='scope',oscRaf=null;
 let trigMode='born';
 let tooltipsEnabled=true;
+let _lastGlobalOct=3;
 let p01SustainAlive=true; // EXPERIMENT: surviving cells hold a sustained note instead of retriggering each generation. Set to false to instantly revert to the old discrete-retrigger behavior.
 
 // ═══ EUCLIDEAN ═════════════════════════════════════════════════════════════
@@ -1176,7 +1177,7 @@ const p02={
       }
     }
     const notesEl=document.getElementById('m-notes');if(notesEl)notesEl.textContent=this.items.length;
-    setCounter(String(this.tick32).padStart(4,'0'),'Tick');
+    setCounter(String(this.items.length).padStart(3,'0'),'Notes');
     this.draw();
   },
 
@@ -1257,14 +1258,14 @@ const p02={
   onUp(){this.dragging=false;},
   clear(){
     for(let r=0;r<ROWS;r++)this.notes[r]=new Uint8Array(COLS);
-    this.items=[];setCounter('0000','Tick');midiAllOff();this.draw();
+    this.items=[];setCounter('0','Notes');midiAllOff();this.draw();
   },
 };
 
 // ═══ PROGRAM 03 — EUCLIDEAN ═══════════════════════════════════════════════
 const p03obj={
   step32:0,_renderTimer:null,
-  init(){this.step32=0;if(eucState.length!==ROWS)initEucState();setCounter('0000','Step');this.draw();},
+  init(){this.step32=0;if(eucState.length!==ROWS)initEucState();const totalHitsInit=eucState.reduce((s,row)=>s+(row.muted?0:row.k),0);setCounter(String(totalHitsInit).padStart(3,'0'),'Hits');this.draw();},
   step(){
     this.step32++;
     const fired=new Set();
@@ -1273,7 +1274,7 @@ const p03obj={
       if(s.muted)continue;
       if(s.pattern[s.step]){const base=noteMap[r]??60,note=Math.min(127,Math.max(0,base+s.octShift*12));if(!fired.has(note)){fired.add(note);trigNote(note,110,r);}}
     }
-    flashNotes(fired);setCounter(String(this.step32).padStart(4,'0'),'Step');const stepEl3=document.getElementById('m-step');if(stepEl3)stepEl3.textContent=this.step32;
+    flashNotes(fired);const totalHits=eucState.reduce((s,row)=>s+(row.muted?0:row.k),0);setCounter(String(totalHits).padStart(3,'0'),'Hits');const stepEl3=document.getElementById('m-step');if(stepEl3)stepEl3.textContent=this.step32;
     this.draw();
     const pane=document.getElementById('pane-euc');
     if(pane&&!pane.classList.contains('shut')){clearTimeout(this._renderTimer);this._renderTimer=setTimeout(()=>renderEucRows(),200);}
@@ -1333,7 +1334,9 @@ const p04={
     if(!this.rows)this.rows=GM_DEFAULTS.map(d=>({name:d.name,note:d.note,ch:d.ch,steps:new Uint8Array(32).fill(0),stepCount:16,subdiv:2,tickAcc:0,muted:false,solo:false}));
     this.playStep=0;this.tick32=0;
     this.maxSteps=Math.max(...this.rows.map(r=>r.stepCount));
-    setCounter('01','Step');this.renderGrid();
+    const hasSoloInit=this.rows.some(r=>r.solo);
+    const activeRowsInit=this.rows.filter(r=>!r.muted&&(!hasSoloInit||r.solo)).length;
+    setCounter(String(activeRowsInit).padStart(2,'0'),'Active Rows');this.renderGrid();
   },
   step(){
     this.tick32++;
@@ -1359,7 +1362,9 @@ const p04={
     // Use row 0 as the display step reference
     const ref=this.rows[0];
     const displayStep=((ref?._step||1)-1)%( ref?.stepCount||16);
-    setCounter(String(displayStep+1).padStart(2,'0'),'Step');
+    const hasSolo4=this.rows.some(r=>r.solo);
+    const activeRows=this.rows.filter(r=>!r.muted&&(!hasSolo4||r.solo)).length;
+    setCounter(String(activeRows).padStart(2,'0'),'Active Rows');
     const dstepEl=document.getElementById('m-dstep');if(dstepEl)dstepEl.textContent=displayStep+1;
     const dmaxEl=document.getElementById('m-dmax');if(dmaxEl)dmaxEl.textContent=ref?.stepCount||16;
     this._updatePlayhead();
@@ -1459,15 +1464,20 @@ let MG_PROB_ENABLED=false; // disabled by default per user request — toggle in
 
 function buildGridNoteMap(root,scaleName,baseOct,octRange,rows){
   const scale=SCALES[scaleName]||SCALES.ionian;
-  const pool=[];
-  for(let o=baseOct;o<=baseOct+octRange;o++)
-    for(let si=0;si<scale.length;si++){const m=12+o*12+root+scale[si];if(m>=12&&m<=120)pool.push(m);}
-  pool.sort((a,b)=>a-b);
-  const unique=[...new Set(pool)];
-  const map=[];
-  for(let i=0;i<rows*2;i++)map.push(unique[i%unique.length]);
-  map.reverse();
-  return map;
+  let oLo=baseOct,oHi=baseOct+octRange,pool=[];
+  while(true){
+    pool=[];
+    for(let o=oLo;o<=oHi;o++)
+      for(let si=0;si<scale.length;si++){const m=12+o*12+root+scale[si];if(m>=0&&m<=127)pool.push(m);}
+    pool=[...new Set(pool)].sort((a,b)=>a-b);
+    if(pool.length>=rows||oLo<=0)break;
+    oLo--; // not enough unique pitches for the row count — extend the range downward
+  }
+  // Take the highest `rows` pitches, ordered high→low so row 0 (drawn at the top) is the highest pitch
+  const top=pool.slice(-rows);
+  top.reverse();
+  while(top.length<rows)top.push(top[top.length-1]??60); // extreme edge case padding
+  return top;
 }
 
 class MGrid{
@@ -2121,8 +2131,8 @@ function drawOsc(){
 //  6=?(Rand) 7=X(Kill) 8=^(Up) 9=v(Down) 10=T+(TrUp) 11=T-(TrDn)
 //  12=H(Harm) 13=E(Echo) 14=B(Bounce) 15=C(Counter) 16=F(Fork) 17=R(RandGen) 18=M(MidiTrig)
 
-const SF_OP_COUNT=19;
-const SF_LABELS=[null,'G','N','+','D','%','?','X','^','v','T+','T-','H','E','B','C','F','R','M'];
+const SF_OP_COUNT=20;
+const SF_LABELS=[null,'G','N','+','D','%','?','X','^','v','T+','T-','H','E','B','C','F','R','M','→'];
 const SF_COLORS={
   1:'#F5A623',  // G — amber
   2:'#E8521A',  // N — orange
@@ -2142,6 +2152,7 @@ const SF_COLORS={
   16:'#80ff80', // F — bright green
   17:'#ffaa60', // R — peach
   18:'#ff6060', // M — coral
+  19:'#80ffcc', // → — teal (matches ^ and v)
 };
 
 // Pitch → hue for signal dot colouring (C=0→red, ascending through spectrum)
@@ -2316,6 +2327,8 @@ const p06={
         const key=`${row},${col}`;
         const st=this.midiTrigState.get(key)||{note:60};
         if(this._lastMidiNote===st.note&&inBounds(nr,nc))pass(nr,nc);
+      } else if(op===19){// → — redirect right
+        if(inBounds(row,col+1))pass(row,col+1,pitch,1,0);
       }
     }
 
@@ -2402,7 +2415,7 @@ const p06={
   _drawOp(op,x,y,cx2,cy2,m,sz,col){
     const lbl=SF_LABELS[op];
     // For text-based ops (T+, T-, H, E, B, C, F, R, M) use crisp canvas text
-    const textOps={10:'T+',11:'T-',12:'H',13:'E',14:'B',15:'C',16:'F',17:'R',18:'M'};
+    const textOps={10:'T+',11:'T-',12:'H',13:'E',14:'B',15:'C',16:'F',17:'R',18:'M',19:'→'};
     if(textOps[op]){
       ctx.font=`bold ${Math.max(9,Math.floor(sz*0.45))}px IBM Plex Mono`;
       ctx.textAlign='center';ctx.textBaseline='middle';
@@ -2429,9 +2442,11 @@ const p06={
       ctx.beginPath();ctx.arc(cx2,cy2,r2,0,Math.PI*2);ctx.stroke();
       ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.lineTo(cx2,cy2-r2*0.7);ctx.stroke();
       ctx.beginPath();ctx.moveTo(cx2,cy2);ctx.lineTo(cx2+r2*0.5,cy2);ctx.stroke();
-    } else if(op===5){// % — two bars
-      const bw=sz*0.12,bh=sz*0.48,by2=cy2-bh/2;
-      ctx.fillRect(cx2-bw*2,by2,bw,bh);ctx.fillRect(cx2+bw,by2,bw,bh);
+    } else if(op===5){// % — diagonal stroke with two small circles, like an actual percent sign
+      const rC=sz*0.09,off=sz*0.24;
+      ctx.beginPath();ctx.moveTo(cx2-off,cy2+off);ctx.lineTo(cx2+off,cy2-off);ctx.stroke();
+      ctx.beginPath();ctx.arc(cx2-off,cy2-off,rC,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(cx2+off,cy2+off,rC,0,Math.PI*2);ctx.fill();
     } else if(op===6){// ? — circle + dot
       const r2=sz*0.22;
       ctx.beginPath();ctx.arc(cx2,cy2-r2*0.3,r2,0,Math.PI*2);ctx.stroke();
@@ -2534,7 +2549,7 @@ const p06={
     document.body.appendChild(menu);
   },
 
-  _OP_NAMES:{1:'Generator',2:'Note (plays pitch)',3:'Split (up+down)',4:'Delay',5:'Gate (every N)',6:'Random (50%)',7:'Kill',8:'Up (redirect ↑)',9:'Down (redirect ↓)',10:'Transpose Up',11:'Transpose Down',12:'Harmonise',13:'Echo',14:'Bounce',15:'Counter (every N)',16:'Fork (3-way)',17:'Random Gen',18:'MIDI Trig'},
+  _OP_NAMES:{1:'Generator',2:'Note (plays pitch)',3:'Split (up+down)',4:'Delay',5:'Gate (every N)',6:'Random (50%)',7:'Kill',8:'Up (redirect ↑)',9:'Down (redirect ↓)',10:'Transpose Up',11:'Transpose Down',12:'Harmonise',13:'Echo',14:'Bounce',15:'Counter (every N)',16:'Fork (3-way)',17:'Random Gen',18:'MIDI Trig',19:'Right (redirect →)'},
   onMove(){},onUp(){this.dragging=false;},
 
   setGenDir(dx,dy){this.genDx=dx;this.genDy=dy;},
@@ -2583,7 +2598,8 @@ const p07={
 
   init(){
     if(this.lanes.length===0)this._buildLanes();
-    setCounter('0000','Step');
+    const totalNotesInit=this.lanes.reduce((s,l)=>s+l.notes.filter(n=>n>=0).length,0);
+    setCounter(String(totalNotesInit).padStart(3,'0'),'Notes');
     this.draw();
     this._renderLaneControls();
   },
@@ -2626,7 +2642,8 @@ const p07={
       lane.step=(lane.step+1)%lane.len;
     }
     flashNotes(fired);
-    setCounter(String(this.lanes[0]?.step||0).padStart(4,'0'),'Step');
+    const totalNotes=this.lanes.reduce((s,l)=>s+l.notes.filter(n=>n>=0).length,0);
+    setCounter(String(totalNotes).padStart(3,'0'),'Notes');
     const pwStepEl=document.getElementById('m-pw-step');if(pwStepEl)pwStepEl.textContent=this.lanes[0]?.step||0;
     this.draw();
   },
@@ -3288,7 +3305,19 @@ const p09={
     if(!this.slots.length)return;
     const total=this._totalDur();
     const arcH=16;
+    const playheadH=7;
+    const bodyTop=playheadH,bodyH=H-arcH-playheadH;
     let xCursor=0;
+
+    // Continuous playhead strip — tracks absolute position across the whole sequence, not just the current slot
+    ctx.fillStyle='#0a0a12';ctx.fillRect(0,0,W,playheadH);
+    let elapsed=0;
+    for(let i=0;i<this.playStep;i++)elapsed+=(this.slots[i]?.duration||32);
+    elapsed+=this.slotTick;
+    const playheadX=Math.max(2,Math.min(W-2,Math.floor((elapsed/total)*W)));
+    ctx.fillStyle='#E8521A';
+    ctx.beginPath();ctx.moveTo(playheadX-4,0);ctx.lineTo(playheadX+4,0);ctx.lineTo(playheadX,playheadH);ctx.closePath();ctx.fill();
+
     // Tension arc
     for(let i=0;i<this.numSlots;i++){
       const s=this.slots[i];const dur=s.duration||32;
@@ -3311,36 +3340,39 @@ const p09={
       const isCur=i===this.playStep;
       const fnColors={'Tonic':'#4a9eff','Subdominant':'#aaffaa','Dominant':'#E8521A','Colour':'#a06eff','Generated':'#9A9080'};
       ctx.fillStyle=isCur?'#141420':(i%2===0?'#070710':'#060608');
-      ctx.fillRect(x,0,sw,H-arcH);
-      if(s.locked){ctx.fillStyle='rgba(245,166,35,0.07)';ctx.fillRect(x,0,sw,H-arcH);ctx.strokeStyle='#F5A623';ctx.lineWidth=1.5;ctx.strokeRect(x+1,1,sw-2,H-arcH-2);}
-      if(isCur&&!s.empty){const prog=this.slotTick/dur;ctx.fillStyle='rgba(232,82,26,0.5)';ctx.fillRect(x,0,Math.floor(sw*prog),3);}
-      if(isCur){ctx.strokeStyle='rgba(232,82,26,0.8)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H-arcH);ctx.stroke();}
+      ctx.fillRect(x,bodyTop,sw,bodyH);
+      if(s.locked){ctx.fillStyle='rgba(245,166,35,0.07)';ctx.fillRect(x,bodyTop,sw,bodyH);ctx.strokeStyle='#F5A623';ctx.lineWidth=1.5;ctx.strokeRect(x+1,bodyTop+1,sw-2,bodyH-2);}
+      if(isCur){ctx.strokeStyle='rgba(232,82,26,0.8)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,bodyTop);ctx.lineTo(x,H-arcH);ctx.stroke();}
+      const beats=(dur/8).toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
       if(s.empty){
-        ctx.fillStyle='#1a1a28';ctx.fillRect(x+2,(H-arcH)/2-12,sw-4,24);
+        ctx.fillStyle='#1a1a28';ctx.fillRect(x+2,bodyTop+bodyH/2-12,sw-4,24);
         ctx.fillStyle='#3a3a50';ctx.font='14px IBM Plex Mono';ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillText('+',x+sw/2,(H-arcH)/2);
+        ctx.fillText('+',x+sw/2,bodyTop+bodyH/2);
+        ctx.fillStyle='#2a2a3a';ctx.font='7px IBM Plex Mono';ctx.fillText(beats+'b',x+sw/2,H-arcH-8);
       } else {
         const fnLabel=s.fn||'';
         ctx.fillStyle=fnColors[fnLabel]||'#9A9080';
         ctx.font=`${Math.min(8,sw*0.12)}px IBM Plex Mono`;ctx.textAlign='center';ctx.textBaseline='top';
-        ctx.fillText(fnLabel.slice(0,8).toUpperCase(),x+sw/2,5);
+        ctx.fillText(fnLabel.slice(0,8).toUpperCase(),x+sw/2,bodyTop+5);
         const fz=Math.min(24,Math.max(10,Math.floor(sw*0.25)));
-        const midH=(H-arcH)/2;
+        const midH=bodyTop+bodyH/2;
         ctx.fillStyle=isCur?'#E8521A':(s.locked?'#F5A623':'#EDE8DC');
         ctx.font=`${fz}px IBM Plex Mono`;ctx.textBaseline='middle';
-        ctx.fillText(s.roman,x+sw/2,midH*0.7);
+        ctx.fillText(s.roman,x+sw/2,midH*0.7+bodyTop*0.3);
         ctx.fillStyle=isCur?'#F5A623':'#5a5040';
         ctx.font=`${Math.max(8,Math.floor(fz*0.5))}px IBM Plex Mono`;
-        ctx.fillText(s.quality,x+sw/2,midH*1.1);
+        ctx.fillText(s.quality,x+sw/2,midH*1.05+bodyTop*0.3);
         ctx.fillStyle=isCur?'#9A9080':'#3A3530';
         ctx.font=`${Math.max(7,Math.floor(sw*0.09))}px IBM Plex Mono`;
         const names=s.notes.map(n=>NOTE_NAMES[n%12]).join(' ');
-        ctx.fillText(names.slice(0,Math.floor(sw/5+2)),x+sw/2,midH*1.5);
-        if(sw>30){const beats=(dur/8).toFixed(1).replace('.0','');ctx.fillStyle='#2a2a3a';ctx.font='7px IBM Plex Mono';ctx.fillText(beats+'b',x+sw/2,midH*1.85);}
+        ctx.fillText(names.slice(0,Math.floor(sw/5+2)),x+sw/2,midH*1.4+bodyTop*0.3);
+        // Duration in beats — always shown now, clamped to a readable minimum size
+        ctx.fillStyle=isCur?'#F5A623':'#4a4438';ctx.font=`${Math.max(7,Math.min(9,Math.floor(sw*0.1)))}px IBM Plex Mono`;
+        ctx.fillText(beats+'b',x+sw/2,H-arcH-8);
       }
       // Resize handle — bright right edge
-      ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fillRect(x+sw-4,0,4,H-arcH);
-      ctx.strokeStyle='#1a1a28';ctx.lineWidth=0.5;ctx.strokeRect(x+0.5,0.5,sw-1,H-arcH-1);
+      ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fillRect(x+sw-4,bodyTop,4,bodyH);
+      ctx.strokeStyle='#1a1a28';ctx.lineWidth=0.5;ctx.strokeRect(x+0.5,bodyTop+0.5,sw-1,bodyH-1);
       xCursor+=sw;
     }
   },
@@ -3689,7 +3721,7 @@ function applyPattern(data){
   document.getElementById('clk-div-sel').value=clockDiv;
   if(data.root)document.getElementById('root-sel').value=data.root;
   if(data.scale)document.getElementById('scale-sel').value=data.scale;
-  if(data.oct){document.getElementById('oct-sl').value=data.oct;document.getElementById('oct-val').textContent=data.oct;}
+  if(data.oct){document.getElementById('oct-sl').value=data.oct;document.getElementById('oct-val').textContent=data.oct;_lastGlobalOct=parseInt(data.oct);}
   if(data.range){document.getElementById('range-sl').value=data.range;document.getElementById('range-val').textContent=data.range+'oct';}
   if(data.chordPerRow)chordPerRow=[...data.chordPerRow];
   chordMode=data.chordMode??true;
@@ -4078,7 +4110,20 @@ function bindControls(){
   };
   document.getElementById('root-sel').addEventListener('change',()=>{buildNoteMap();renderRail();redrawCurrent();});
   document.getElementById('scale-sel').addEventListener('change',()=>{buildNoteMap();renderRail();redrawCurrent();});
-  document.getElementById('oct-sl').addEventListener('input',e=>{document.getElementById('oct-val').textContent=e.target.value;buildNoteMap();renderRail();redrawCurrent();});
+  document.getElementById('oct-sl').addEventListener('input',e=>{
+    const newOct=parseInt(e.target.value);
+    document.getElementById('oct-val').textContent=e.target.value;
+    buildNoteMap();renderRail();redrawCurrent();
+    if(typeof p09!=='undefined'){
+      const delta=(newOct-_lastGlobalOct)*12;
+      if(delta!==0&&p09.slots){
+        p09.slots.forEach(s=>{if(!s.empty&&s.notes&&s.notes.length)s.notes=s.notes.map(n=>Math.max(0,Math.min(127,n+delta)));});
+        p09._prevVoicing=null;
+        if(currentProg===9)p09.draw();
+      }
+    }
+    _lastGlobalOct=newOct;
+  });
   document.getElementById('range-sl').addEventListener('input',e=>{document.getElementById('range-val').textContent=e.target.value+'oct';buildNoteMap();renderRail();redrawCurrent();});
   document.getElementById('vel-sl').addEventListener('input',e=>document.getElementById('vel-val').textContent=e.target.value);
   document.getElementById('len-sl').addEventListener('input',e=>document.getElementById('len-val').textContent=e.target.value+'ms');
