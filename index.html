@@ -165,7 +165,7 @@ body.light .drum-row:nth-child(odd){background:#e0dbd3;}
 .dstep:hover{border-color:var(--border2);background:#1a1810;}
 .dstep.on{background:var(--accent);border-color:#ff7040;box-shadow:0 0 6px rgba(232,82,26,0.4);}
 .dstep.on.med{background:var(--accent2);border-color:#ffb030;box-shadow:0 0 4px rgba(245,166,35,0.3);}
-.dstep.on.ghost{background:#2a1505;border-color:#4a2808;box-shadow:none;}
+.dstep.on.ghost{background:#4a3d05;border-color:#8a7010;box-shadow:none;}
 .dstep.cur{outline:2px solid var(--accent3);outline-offset:-2px;background:#1c1a10;}
 .dstep.cur.on{outline-color:#fff;}
 /* light mode */
@@ -630,7 +630,7 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
     <div class="pbody">
       <select id="midi-sel" title="MIDI output device"><option value="">— no device —</option></select>
       <div class="row"><div class="lbl">Ch</div>
-        <select id="midi-ch" title="MIDI channel (1-16) that notes are sent on">
+        <select id="midi-ch" title="MIDI channel (1-16) that notes are sent on" style="min-width:48px;padding:2px 4px;">
           <option value="0">01</option><option value="1">02</option><option value="2">03</option><option value="3">04</option><option value="4">05</option><option value="5">06</option><option value="6">07</option><option value="7">08</option><option value="8">09</option><option value="9">10</option><option value="10">11</option><option value="11">12</option><option value="12">13</option><option value="13">14</option><option value="14">15</option><option value="15">16</option>
         </select>
       </div>
@@ -937,6 +937,7 @@ function renderEucRows(){
     const top=document.createElement('div');top.style.cssText='display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
     // ON/OFF
     const mb=document.createElement('button');
+    mb.title='Mute/unmute this row';
     mb.style.cssText=`background:none;border:1px solid ${s.muted?'#ff4040':'var(--accent)'};color:${s.muted?'#ff4040':'var(--accent)'};font-family:var(--mono);font-size:8px;padding:2px 4px;cursor:pointer;flex-shrink:0;`;
     mb.textContent=s.muted?'OFF':'ON';
     mb.addEventListener('mousedown',e=>{e.stopPropagation();s.muted=!s.muted;mb.style.borderColor=s.muted?'#ff4040':'var(--accent)';mb.style.color=s.muted?'#ff4040':'var(--accent)';mb.textContent=s.muted?'OFF':'ON';p03obj.draw();});
@@ -1394,7 +1395,7 @@ const p04={
       sb.addEventListener('mousedown',e=>{e.stopPropagation();row.solo=!row.solo;sb.className='drum-mute'+(row.solo?' solo':'');});
       ctrl.appendChild(sb);
       const scl=document.createElement('span');scl.style.cssText='font-size:8px;color:var(--tdim);margin-left:2px;';scl.textContent='n';ctrl.appendChild(scl);
-      const sci=document.createElement('input');sci.type='number';sci.min=1;sci.max=32;sci.value=row.stepCount;sci.title='Number of steps in this row\'s pattern';sci.style.cssText='width:30px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
+      const sci=document.createElement('input');sci.type='number';sci.min=1;sci.max=32;sci.value=row.stepCount;sci.title='Number of steps in this row\'s pattern';sci.style.cssText='width:42px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
       sci.addEventListener('change',()=>{row.stepCount=Math.max(1,Math.min(32,parseInt(sci.value)||16));sci.value=row.stepCount;this.renderGrid();});
       ctrl.appendChild(sci);
       // Subdivision selector
@@ -1418,17 +1419,22 @@ const p04={
         if(si%16===0) step.style.borderTopColor='var(--accent2)';
         step.dataset.row=ri;step.dataset.step=si;
         step.addEventListener('mousedown',e=>{e.preventDefault();if(e.button===0){row.steps[si]=row.steps[si]>0?0:3;}const nv=row.steps[si];step.className='dstep'+(nv===3?' on':(nv===2?' on med':(nv===1?' on ghost':'')));if(si%16===0)step.style.borderTopColor='var(--accent2)';});
-        step.addEventListener('contextmenu',e=>{e.preventDefault();if(row.steps[si]===0)return;row.steps[si]=row.steps[si]===3?2:(row.steps[si]===2?1:3);const nv=row.steps[si];step.className='dstep'+(nv===3?' on':(nv===2?' on med':(nv===1?' on ghost':'')));if(si%16===0)step.style.borderTopColor='var(--accent2)';});
+        step.addEventListener('contextmenu',e=>{
+          e.preventDefault();
+          if(row.steps[si]===0){row.steps[si]=1;}
+          else{row.steps[si]=row.steps[si]===3?2:(row.steps[si]===2?1:3);}
+          const nv=row.steps[si];step.className='dstep'+(nv===3?' on':(nv===2?' on med':(nv===1?' on ghost':'')));if(si%16===0)step.style.borderTopColor='var(--accent2)';
+        });
         stepsEl.appendChild(step);
       }
       rowEl.appendChild(stepsEl);
       const nc=document.createElement('div');nc.className='drum-note-ch';
       const nl=document.createElement('span');nl.style.cssText='font-size:8px;color:var(--tdim);';nl.textContent='n';nc.appendChild(nl);
-      const ni=document.createElement('input');ni.type='number';ni.min=0;ni.max=127;ni.value=row.note;ni.title='MIDI note';
+      const ni=document.createElement('input');ni.type='number';ni.min=0;ni.max=127;ni.value=row.note;ni.title='MIDI note';ni.style.cssText='width:40px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
       ni.addEventListener('change',()=>{row.note=Math.max(0,Math.min(127,parseInt(ni.value)||36));ni.value=row.note;});
       nc.appendChild(ni);
       const cl=document.createElement('span');cl.style.cssText='font-size:8px;color:var(--tdim);';cl.textContent='ch';nc.appendChild(cl);
-      const cs=document.createElement('select');cs.title='MIDI channel for this drum voice';
+      const cs=document.createElement('select');cs.title='MIDI channel for this drum voice';cs.style.cssText='min-width:38px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);';
       for(let c=0;c<16;c++){const o=document.createElement('option');o.value=c;o.textContent=c+1;if(c===row.ch)o.selected=true;cs.appendChild(o);}
       cs.addEventListener('change',()=>{row.ch=parseInt(cs.value);});nc.appendChild(cs);
       rowEl.appendChild(nc);el.appendChild(rowEl);
@@ -1656,48 +1662,48 @@ const p05={
       // header
       const hdr=document.createElement('div');hdr.className='mg-header';
       // collapse toggle
-      const colBtn=document.createElement('button');colBtn.className='mg-collapse';colBtn.textContent=g.collapsed?'▶':'▼';
+      const colBtn=document.createElement('button');colBtn.className='mg-collapse';colBtn.textContent=g.collapsed?'▶':'▼';colBtn.title='Collapse/expand this grid';
       colBtn.addEventListener('click',()=>{g.collapsed=!g.collapsed;sec.className='mg-grid-section '+(g.collapsed?'collapsed':'expanded');colBtn.textContent=g.collapsed?'▶':'▼';setTimeout(()=>this.resizeCanvases(),50);});
       hdr.appendChild(colBtn);
       // grid label
       const tag=document.createElement('div');tag.className='mg-tag';tag.textContent='G'+(gi+1);tag.style.color=MG_COLORS[gi];hdr.appendChild(tag);
       // mute
-      const muteBtn=document.createElement('button');muteBtn.className='mg-btn'+(g.muted?' muted':'');muteBtn.textContent=g.muted?'MUTED':'ON';
+      const muteBtn=document.createElement('button');muteBtn.className='mg-btn'+(g.muted?' muted':'');muteBtn.textContent=g.muted?'MUTED':'ON';muteBtn.title='Mute/unmute this grid';
       muteBtn.addEventListener('click',()=>{g.muted=!g.muted;muteBtn.className='mg-btn'+(g.muted?' muted':'');muteBtn.textContent=g.muted?'MUTED':'ON';});
       hdr.appendChild(muteBtn);
       // direction
-      const dirSel=document.createElement('select');dirSel.className='mg-sel';
+      const dirSel=document.createElement('select');dirSel.className='mg-sel';dirSel.title='Playback direction: forward, backward, or ping-pong';
       ['fwd','bwd','ping'].forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent={fwd:'→',bwd:'←',ping:'↔'}[d];if(d===g.dir)o.selected=true;dirSel.appendChild(o);});
       dirSel.addEventListener('change',()=>{g.dir=dirSel.value;g.pingDir=1;});
       hdr.appendChild(makeLabel('dir'));hdr.appendChild(dirSel);
       // subdivision
-      const subdSel=document.createElement('select');subdSel.className='mg-sel';
+      const subdSel=document.createElement('select');subdSel.className='mg-sel';subdSel.title='Note duration per step for this grid';
       [[0.03125,'Whole'],[0.0625,'Half'],[0.125,'Quarter'],[0.25,'Eighth'],[0.5,'16th'],[1.0,'32nd']].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(Math.abs(v-g.subdiv)<0.001)o.selected=true;subdSel.appendChild(o);});
       subdSel.addEventListener('change',()=>{g.subdiv=parseFloat(subdSel.value);});
       hdr.appendChild(makeLabel('spd'));hdr.appendChild(subdSel);
       // loop end
-      const loopIn=document.createElement('input');loopIn.type='number';loopIn.className='mg-num';loopIn.min=1;loopIn.max=g.cols;loopIn.value=g.loopEnd;
+      const loopIn=document.createElement('input');loopIn.type='number';loopIn.className='mg-num';loopIn.min=1;loopIn.max=g.cols;loopIn.value=g.loopEnd;loopIn.title='Column where this grid loops back to the start';
       loopIn.addEventListener('change',()=>{g.loopEnd=Math.max(1,Math.min(g.cols,parseInt(loopIn.value)||g.cols));loopIn.value=g.loopEnd;g.drawGrid();});
       hdr.appendChild(makeLabel('loop'));hdr.appendChild(loopIn);
       // transpose
-      const transIn=document.createElement('input');transIn.type='number';transIn.className='mg-num';transIn.min=-24;transIn.max=24;transIn.value=g.transpose;transIn.style.width='36px';
+      const transIn=document.createElement('input');transIn.type='number';transIn.className='mg-num';transIn.min=-24;transIn.max=24;transIn.value=g.transpose;transIn.style.width='44px';transIn.title='Transpose this grid in semitones';
       transIn.addEventListener('change',()=>{g.transpose=Math.max(-24,Math.min(24,parseInt(transIn.value)||0));transIn.value=g.transpose;g.noteMap=buildGridNoteMap(g.root,g.scaleName,g.baseOct,g.octRange,g.rows);g.drawGrid();});
       hdr.appendChild(makeLabel('+st'));hdr.appendChild(transIn);
       // scale
-      const rootSel=document.createElement('select');rootSel.className='mg-sel';
+      const rootSel=document.createElement('select');rootSel.className='mg-sel';rootSel.title='Root note for this grid';
       ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].forEach((n,i)=>{const o=document.createElement('option');o.value=i;o.textContent=n;if(i===g.root)o.selected=true;rootSel.appendChild(o);});
       rootSel.addEventListener('change',()=>{g.root=parseInt(rootSel.value);g.noteMap=buildGridNoteMap(g.root,g.scaleName,g.baseOct,g.octRange,g.rows);g.drawGrid();});
       hdr.appendChild(makeLabel('key'));hdr.appendChild(rootSel);
-      const scaleSel=document.createElement('select');scaleSel.className='mg-sel';
+      const scaleSel=document.createElement('select');scaleSel.className='mg-sel';scaleSel.title='Scale/mode this grid\'s rows are drawn from';
       Object.keys(SCALES).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;if(k===g.scaleName)o.selected=true;scaleSel.appendChild(o);});
       scaleSel.addEventListener('change',()=>{g.scaleName=scaleSel.value;g.noteMap=buildGridNoteMap(g.root,g.scaleName,g.baseOct,g.octRange,g.rows);g.drawGrid();});
       hdr.appendChild(scaleSel);
       // octave
-      const octIn=document.createElement('input');octIn.type='number';octIn.className='mg-num';octIn.min=0;octIn.max=8;octIn.value=g.baseOct;
+      const octIn=document.createElement('input');octIn.type='number';octIn.className='mg-num';octIn.min=0;octIn.max=8;octIn.value=g.baseOct;octIn.title='Base octave this grid\'s rows are centered around';
       octIn.addEventListener('change',()=>{g.baseOct=Math.max(0,Math.min(8,parseInt(octIn.value)||3));g.noteMap=buildGridNoteMap(g.root,g.scaleName,g.baseOct,g.octRange,g.rows);g.drawGrid();});
       hdr.appendChild(makeLabel('oct'));hdr.appendChild(octIn);
       // midi out
-      const midiSel=document.createElement('select');midiSel.className='mg-sel';midiSel.style.maxWidth='90px';
+      const midiSel=document.createElement('select');midiSel.className='mg-sel';midiSel.style.maxWidth='90px';midiSel.title='MIDI output device for this grid (or use the global one)';
       const gopt=document.createElement('option');gopt.value='';gopt.textContent='Global';midiSel.appendChild(gopt);
       if(midiAccess)midiAccess.outputs.forEach(o=>{const opt=document.createElement('option');opt.value=o.id;opt.textContent=o.name.slice(0,12);if(o.id===g.midiOutId)opt.selected=true;midiSel.appendChild(opt);});
       midiSel.addEventListener('change',()=>{g.midiOutId=midiSel.value;});
@@ -1708,11 +1714,11 @@ const p05={
       chSel.addEventListener('change',()=>{g.midiCh=parseInt(chSel.value);});
       hdr.appendChild(makeLabel('ch'));hdr.appendChild(chSel);
       // grid size
-      const rowsIn=document.createElement('input');rowsIn.type='number';rowsIn.className='mg-num';rowsIn.min=2;rowsIn.max=24;rowsIn.value=g.rows;
-      const colsIn=document.createElement('input');colsIn.type='number';colsIn.className='mg-num';colsIn.min=2;colsIn.max=48;colsIn.value=g.cols;
+      const rowsIn=document.createElement('input');rowsIn.type='number';rowsIn.className='mg-num';rowsIn.min=2;rowsIn.max=24;rowsIn.value=g.rows;rowsIn.title='Number of pitch rows (applies after clicking ⟳)';
+      const colsIn=document.createElement('input');colsIn.type='number';colsIn.className='mg-num';colsIn.min=2;colsIn.max=48;colsIn.value=g.cols;colsIn.title='Number of step columns (applies after clicking ⟳)';
       hdr.appendChild(makeLabel('r'));hdr.appendChild(rowsIn);
       hdr.appendChild(makeLabel('c'));hdr.appendChild(colsIn);
-      const applyBtn=document.createElement('button');applyBtn.className='mg-btn';applyBtn.textContent='⟳';
+      const applyBtn=document.createElement('button');applyBtn.className='mg-btn';applyBtn.textContent='⟳';applyBtn.title='Apply the rows/columns size above';
       applyBtn.addEventListener('click',()=>{
         const r=Math.max(2,Math.min(24,parseInt(rowsIn.value)||12));
         const c=Math.max(2,Math.min(48,parseInt(colsIn.value)||12));
@@ -1721,7 +1727,7 @@ const p05={
       });
       hdr.appendChild(applyBtn);
       // clear + copy
-      const clearBtn=document.createElement('button');clearBtn.className='mg-btn';clearBtn.textContent='CLR';
+      const clearBtn=document.createElement('button');clearBtn.className='mg-btn';clearBtn.textContent='CLR';clearBtn.title='Clear all cells in this grid';
       clearBtn.addEventListener('click',()=>{g.cells.fill(0);g.playStep=0;g.drawGrid();});
       hdr.appendChild(clearBtn);
       if(gi>0){
@@ -1740,6 +1746,7 @@ const p05={
       this.wrap.appendChild(sec);
     });
     setTimeout(()=>this.resizeCanvases(),30);
+    if(!tooltipsEnabled)this.wrap.querySelectorAll('[title]').forEach(n=>{n.dataset.tt=n.title;n.removeAttribute('title');});
   },
   resizeCanvases(){
     mgGrids.forEach((g,gi)=>{
@@ -1796,6 +1803,7 @@ function buildChordRows(){
     const row=document.createElement('div');row.className='chord-row-item';
     const nl=document.createElement('span');nl.className='chord-row-note';nl.textContent=name;row.appendChild(nl);
     const sel=document.createElement('select');
+    sel.title='Chord type this row fires when Chord Mode is on';
     CHORD_NAMES.forEach(cn=>{const o=document.createElement('option');o.value=cn;o.textContent=cn;if(cn===chordPerRow[r])o.selected=true;sel.appendChild(o);});
     sel.addEventListener('change',()=>{chordPerRow[r]=sel.value;});
     row.appendChild(sel);el.appendChild(row);
@@ -2344,9 +2352,11 @@ const p06={
     const labelW=Math.max(24,cellSz);
 
     // Draw grid cells and operators
+    const dragging=this.dragging&&this._dragOp;
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
-        const op=this.grid[r*COLS+c];
+        const isDragOrigin=dragging&&r===this._dragOp.fromR&&c===this._dragOp.fromC;
+        const op=isDragOrigin?0:this.grid[r*COLS+c];
         const x=c*cellSz,y=r*cellSz;
         const cx2=x+cellSz/2,cy2=y+cellSz/2;
         const m=Math.max(3,cellSz*0.28);
@@ -2360,6 +2370,21 @@ const p06={
         ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';
         this._drawOp(op,x,y,cx2,cy2,m,cellSz,col);
         ctx.lineCap='butt';ctx.lineJoin='miter';
+      }
+    }
+    // Drag-move preview: highlight the hover cell and ghost-draw the operator there
+    if(dragging){
+      const hr=this._dragHoverR,hc=this._dragHoverC;
+      const hx=hc*cellSz,hy=hr*cellSz;
+      const occupied=this.grid[hr*COLS+hc]>0&&!(hr===this._dragOp.fromR&&hc===this._dragOp.fromC);
+      ctx.strokeStyle=occupied?'#ff4040':'rgba(255,255,255,0.6)';
+      ctx.lineWidth=2;ctx.strokeRect(hx+1,hy+1,cellSz-2,cellSz-2);
+      if(!occupied){
+        const col=SF_COLORS[this._dragOp.op]||'#fff';
+        ctx.globalAlpha=0.55;
+        ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';
+        this._drawOp(this._dragOp.op,hx,hy,hx+cellSz/2,hy+cellSz/2,Math.max(3,cellSz*0.28),cellSz,col);
+        ctx.lineCap='butt';ctx.lineJoin='miter';ctx.globalAlpha=1;
       }
     }
 
@@ -2480,17 +2505,15 @@ const p06={
       return;
     }
     if(this.grid[r*COLS+c]>0){
-      // Left-click on a filled cell = erase (toggle off)
-      this.grid[r*COLS+c]=0;
-      this.genState.delete(key);
-      this.counterState.delete(key);
-      this.midiTrigState.delete(key);
+      // Left-click on a filled cell = pick it up for a possible drag-move.
+      // Dropping on the same cell (onUp with no movement) still erases it, preserving the old click-to-erase behavior.
+      this._dragOp={fromR:r,fromC:c,op:this.grid[r*COLS+c],gen:this.genState.get(key),counter:this.counterState.get(key),midiTrig:this.midiTrigState.get(key)};
+      this._dragHoverR=r;this._dragHoverC=c;
+      this.dragging=true;this.draw();
     } else {
       // Left-click on an empty cell = open operator picker to place one
       this._openOpMenu(cx,cy,r,c);
-      return;
     }
-    this.dragging=true;this.draw();
   },
 
   _openOpMenu(cx,cy,r,c){
@@ -2550,7 +2573,38 @@ const p06={
   },
 
   _OP_NAMES:{1:'Generator',2:'Note (plays pitch)',3:'Split (up+down)',4:'Delay',5:'Gate (every N)',6:'Random (50%)',7:'Kill',8:'Up (redirect ↑)',9:'Down (redirect ↓)',10:'Transpose Up',11:'Transpose Down',12:'Harmonise',13:'Echo',14:'Bounce',15:'Counter (every N)',16:'Fork (3-way)',17:'Random Gen',18:'MIDI Trig',19:'Right (redirect →)'},
-  onMove(){},onUp(){this.dragging=false;},
+  onMove(cx,cy){
+    if(!this.dragging||!this._dragOp)return;
+    const{r,c}=this.cellXY(cx,cy);
+    if(r<0||r>=ROWS||c<0||c>=COLS)return;
+    this._dragHoverR=r;this._dragHoverC=c;
+    this.draw();
+  },
+  onUp(){
+    if(this.dragging&&this._dragOp){
+      const{fromR,fromC,op,gen,counter,midiTrig}=this._dragOp;
+      const toR=this._dragHoverR,toC=this._dragHoverC;
+      const fromKey=`${fromR},${fromC}`;
+      if(toR===fromR&&toC===fromC){
+        // Dropped on the same cell — treat as the old click-to-erase behavior
+        this.grid[fromR*COLS+fromC]=0;
+        this.genState.delete(fromKey);this.counterState.delete(fromKey);this.midiTrigState.delete(fromKey);
+      } else if(this.grid[toR*COLS+toC]>0){
+        // Target occupied — cancel the move, leave both cells untouched
+      } else {
+        // Move to the new (empty) cell
+        this.grid[fromR*COLS+fromC]=0;
+        this.genState.delete(fromKey);this.counterState.delete(fromKey);this.midiTrigState.delete(fromKey);
+        this.grid[toR*COLS+toC]=op;
+        const toKey=`${toR},${toC}`;
+        if(gen)this.genState.set(toKey,gen);
+        if(counter)this.counterState.set(toKey,counter);
+        if(midiTrig)this.midiTrigState.set(toKey,midiTrig);
+      }
+      this.draw();
+    }
+    this._dragOp=null;this.dragging=false;
+  },
 
   setGenDir(dx,dy){this.genDx=dx;this.genDy=dy;},
   setGenPeriod(p){this.genPeriod=p;},
@@ -2629,15 +2683,34 @@ const p07={
     const fired=new Set();
     for(let li=0;li<this.lanes.length;li++){
       const lane=this.lanes[li];
-      if(lane.muted){lane.step=(lane.step+1)%lane.len;continue;}
+      if(lane._heldNote===undefined)lane._heldNote=null;
+      if(lane.muted){
+        if(lane._heldNote){midiNoteOff(lane._heldNote);_stopLong(lane._heldNote);lane._heldNote=null;}
+        lane.step=(lane.step+1)%lane.len;continue;
+      }
       const s=lane.step%lane.len;
       const deg=lane.notes[s];
       // Check if previous step was tied into this one — if so, don't retrigger
       const prevS=(s-1+lane.len)%lane.len;
       const isTiedFrom=lane.tied&&lane.tied[prevS]===1&&lane.notes[prevS]>=0&&lane.notes[prevS]===deg;
+      if(!isTiedFrom&&lane._heldNote){
+        // The previous tie chain just ended — release the sustained note now
+        midiNoteOff(lane._heldNote);_stopLong(lane._heldNote);lane._heldNote=null;
+      }
       if(deg>=0&&!isTiedFrom){
         const note=noteMap[Math.min(deg,noteMap.length-1)]??60;
-        if(!fired.has(note)){fired.add(note);trigNote(note,90+Math.floor(Math.random()*30),deg);}
+        if(!fired.has(note)){
+          fired.add(note);
+          const vel=90+Math.floor(Math.random()*30);
+          const tiesForward=lane.tied&&lane.tied[s]===1&&lane.notes[(s+1)%lane.len]===deg;
+          if(tiesForward){
+            midiNoteOn(note,vel,true);
+            if(audioEnabled){ensureAudio();_playLong(note,vel);}
+            lane._heldNote=note;
+          } else {
+            trigNote(note,vel,deg);
+          }
+        }
       }
       lane.step=(lane.step+1)%lane.len;
     }
@@ -2745,8 +2818,8 @@ const p07={
       const row=document.createElement('div');
       row.style.cssText='display:flex;align-items:center;gap:5px;font-size:9px;border-bottom:1px solid var(--border);padding-bottom:4px;';
       const lbl=document.createElement('span');lbl.style.cssText='color:var(--tmid);min-width:14px;';lbl.textContent='L'+(li+1);row.appendChild(lbl);
-      const ll=document.createElement('span');ll.style.cssText='color:var(--tdim);font-size:8px;';ll.textContent='len';row.appendChild(ll);
-      const li2=document.createElement('input');li2.type='number';li2.min=1;li2.max=32;li2.value=lane.len;li2.style.cssText='width:32px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
+      const ll=document.createElement('span');ll.style.cssText='color:var(--tdim);font-size:8px;';ll.textContent='len';ll.title='Number of steps in this lane';row.appendChild(ll);
+      const li2=document.createElement('input');li2.type='number';li2.min=1;li2.max=32;li2.value=lane.len;li2.title='Number of steps in this lane';li2.style.cssText='width:32px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
       li2.addEventListener('change',()=>{
         const nl=Math.max(1,Math.min(32,parseInt(li2.value)||8));
         const old=lane.notes;lane.notes=new Int8Array(nl).fill(-1);
@@ -2754,14 +2827,15 @@ const p07={
         lane.len=nl;li2.value=nl;this.draw();
       });
       row.appendChild(li2);
-      const mb=document.createElement('button');mb.style.cssText=`background:none;border:1px solid ${lane.muted?'#ff4040':'var(--border)'};color:${lane.muted?'#ff4040':'var(--tdim)'};font-family:var(--mono);font-size:8px;padding:1px 4px;cursor:pointer;`;mb.textContent=lane.muted?'MUTE':'—';
+      const mb=document.createElement('button');mb.title='Mute/unmute this lane';mb.style.cssText=`background:none;border:1px solid ${lane.muted?'#ff4040':'var(--border)'};color:${lane.muted?'#ff4040':'var(--tdim)'};font-family:var(--mono);font-size:8px;padding:1px 4px;cursor:pointer;`;mb.textContent='M';
       mb.addEventListener('mousedown',e=>{e.stopPropagation();lane.muted=!lane.muted;this._renderLaneControls();this.draw();});
       row.appendChild(mb);
-      const clrb=document.createElement('button');clrb.style.cssText=mb.style.cssText;clrb.textContent='CLR';
+      const clrb=document.createElement('button');clrb.title='Clear all notes in this lane';clrb.style.cssText=mb.style.cssText;clrb.textContent='CLR';
       clrb.addEventListener('click',()=>{lane.notes.fill(-1);this.draw();});
       row.appendChild(clrb);
       el.appendChild(row);
     }
+    if(!tooltipsEnabled)el.querySelectorAll('[title]').forEach(n=>{n.dataset.tt=n.title;n.removeAttribute('title');});
   },
 
   _laneStepFromXY(cx,cy){
@@ -2822,7 +2896,7 @@ const p07={
 
   onUp(){this.dragging=false;this.dragLane=-1;this.dragStep=-1;},
 
-  clear(){this.lanes.forEach(l=>{l.notes.fill(-1);l.step=0;});this.draw();},
+  clear(){this.lanes.forEach(l=>{if(l._heldNote){midiNoteOff(l._heldNote);_stopLong(l._heldNote);l._heldNote=null;}l.notes.fill(-1);l.step=0;});this.draw();},
   randomize(){
     const scaleN=this._scaleSize();
     this.lanes.forEach(l=>{for(let i=0;i<l.len;i++)l.notes[i]=Math.random()<0.5?Math.floor(Math.random()*scaleN):-1;});
@@ -2889,12 +2963,13 @@ const p08={
       const sw=document.createElement('div');sw.style.cssText=`width:8px;height:8px;border-radius:50%;background:hsl(${cur.hue},80%,55%);flex-shrink:0;`;row.appendChild(sw);
       const lbl=document.createElement('span');lbl.style.cssText='color:var(--tmid);min-width:18px;';lbl.textContent='C'+(i+1);row.appendChild(lbl);
       const dl=document.createElement('span');dl.style.cssText='color:var(--tdim);font-size:8px;';dl.textContent='div';row.appendChild(dl);
-      const ds=document.createElement('select');ds.style.cssText='background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:2px 4px;';
+      const ds=document.createElement('select');ds.title='How often this cursor takes a step';ds.style.cssText='background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:9px;padding:2px 4px;';
       this._DIVS.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===cur.divider)o.selected=true;ds.appendChild(o);});
       ds.addEventListener('change',()=>{cur.divider=parseInt(ds.value);cur.tickAcc=0;});
       row.appendChild(ds);
       el.appendChild(row);
     }
+    if(!tooltipsEnabled)el.querySelectorAll('[title]').forEach(n=>{n.dataset.tt=n.title;n.removeAttribute('title');});
   },
 
   step(){
@@ -3387,7 +3462,7 @@ const p09={
     const hdr=document.createElement('div');
     hdr.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);';
     const htitle=document.createElement('span');htitle.style.cssText='font-size:10px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;';htitle.textContent='Choose Chord — Slot '+(slotIdx+1);
-    const closeBtn=document.createElement('button');closeBtn.className='btn';closeBtn.textContent='✕';closeBtn.style.cssText='padding:4px 8px;font-size:10px;flex:none;';
+    const closeBtn=document.createElement('button');closeBtn.className='btn';closeBtn.textContent='✕';closeBtn.title='Close without changing this slot';closeBtn.style.cssText='padding:4px 8px;font-size:10px;flex:none;';
     closeBtn.addEventListener('click',()=>this._closePicker());
     hdr.appendChild(htitle);hdr.appendChild(closeBtn);box.appendChild(hdr);
     const clearDiv=document.createElement('div');clearDiv.style.cssText='padding:8px 16px;border-bottom:1px solid var(--border);cursor:pointer;';
@@ -3515,6 +3590,7 @@ function stopT(){
   // Release any sustained notes from modes that hold them
   if(typeof p09!=='undefined'&&p09._releaseActive)p09._releaseActive();
   if(typeof p01!=='undefined'&&p01._releaseHeld)p01._releaseHeld();
+  if(typeof p07!=='undefined'&&p07.lanes)p07.lanes.forEach(l=>{if(l._heldNote){midiNoteOff(l._heldNote);_stopLong(l._heldNote);l._heldNote=null;}});
   document.getElementById('btn-play').textContent='▶ Play';
   document.getElementById('btn-play').classList.remove('on');
 }
@@ -3925,7 +4001,7 @@ function toggleTheme(){
   document.getElementById('theme-icon-light').style.display=isLight?'':'none';
   try{localStorage.setItem('loom_theme',isLight?'light':'dark');}catch(e){}
 }
-let _uiScale=1;
+let _uiScale=1.1;
 const _UI_SCALES=[0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6];
 function setUIScale(v){
   _uiScale=parseFloat(v)||1;
@@ -3952,7 +4028,7 @@ function restorePrefs(){
       document.getElementById('theme-icon-light').style.display='';
     }
     const scale=localStorage.getItem('loom_scale');
-    if(scale){setUIScale(parseFloat(scale));}
+    setUIScale(scale?parseFloat(scale):1.1);
     const tt=localStorage.getItem('loom_tooltips');
     if(tt==='0'){setTooltipsEnabled(false);}
   }catch(e){}
