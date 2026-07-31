@@ -977,6 +977,15 @@ const p01={
   cells:null,divs:null,prev:null,gen:0,dragging:false,drawVal:1,tick32:0,
   init(){this.cells=new Uint8Array(ROWS*COLS);this.divs=new Uint8Array(ROWS*COLS).fill(4);this.prev=new Uint8Array(ROWS*COLS);this.gen=0;this.tick32=0;this._releaseHeld?.();this._rowHeld=new Map();setCounter('0000','Generation');},
   divFires(d){const p={1:32,2:16,4:8,8:4,16:2,32:1}[d]||8;return this.tick32%p===0;},
+  _noteForCell(r,c){
+    // Melodic movement: shift a few scale-steps based on column position, so patterns drifting
+    // horizontally across the grid produce actual melodic contour instead of one fixed drone per row.
+    if(c<0)return noteMap[r]??60;
+    const zones=5;
+    const zone=Math.floor((c/Math.max(1,COLS))*zones)-Math.floor(zones/2); // roughly -2..+2
+    const idx=Math.max(0,Math.min(noteMap.length-1,r+zone));
+    return noteMap[idx]??60;
+  },
   step(){
     this.tick32=(this.tick32+1)%32;
     const next=new Uint8Array(ROWS*COLS),nd=this.divs.slice();
@@ -993,15 +1002,15 @@ const p01={
     if(p01SustainAlive&&trigMode!=='born'){
       // EXPERIMENT: hold a note for as long as a row has a living cell — only re-articulate on birth/death, no per-generation retrigger
       for(let r=0;r<ROWS;r++){
-        let bornHere=false,aliveNow=false;
+        let bornHere=false,aliveNow=false,bornCol=-1;
         for(let c=0;c<COLS;c++){
           const cur=this.cells[r*COLS+c],was=this.prev[r*COLS+c];
           if(cur)aliveNow=true;
-          if(cur&&!was&&this.divFires(this.divs[r*COLS+c]))bornHere=true;
+          if(cur&&!was&&this.divFires(this.divs[r*COLS+c])){bornHere=true;if(bornCol<0)bornCol=c;}
         }
         const held=this._rowHeld.get(r);
         if(bornHere&&!held){
-          const root=noteMap[r]??60,vel=Math.min(127,90+Math.floor(Math.random()*30));
+          const root=this._noteForCell(r,bornCol),vel=Math.min(127,90+Math.floor(Math.random()*30));
           const notes=getChordNotes(root,r);
           notes.forEach(n=>{midiNoteOn(n,vel,true);if(audioEnabled){ensureAudio();_playLong(n,vel);}});
           this._rowHeld.set(r,notes);
@@ -1022,7 +1031,7 @@ const p01={
         const t=trigMode==='born'?born:trigMode==='alive'?!!cur:born||alive2;
         if(t&&this.divFires(this.divs[r*COLS+c])){
           const vel=born?Math.min(127,90+Math.floor(Math.random()*30)):Math.max(40,70-Math.floor(Math.random()*20));
-          cands.push({note:noteMap[r]??60,vel,r});
+          cands.push({note:this._noteForCell(r,c),vel,r});
         }
       }
       cands.sort((a,b)=>b.vel-a.vel);
@@ -1784,15 +1793,25 @@ function makeLabel(t){const s=document.createElement('span');s.className='mg-ctr
 function setCounter(v,l){document.getElementById('gen-ctr').textContent=v;document.getElementById('gen-lbl').textContent=l;}
 function buildNoteMap(){
   const root=parseInt(document.getElementById('root-sel').value);
-  const scale=SCALES[document.getElementById('scale-sel').value];
+  const scaleName=document.getElementById('scale-sel').value;
+  const scale=SCALES[scaleName]||SCALES.ionian;
   const baseOct=parseInt(document.getElementById('oct-sl').value);
   const octRange=parseInt(document.getElementById('range-sl').value)||2;
-  const pool=[];
-  for(let o=baseOct;o<=baseOct+octRange;o++)for(let si=0;si<scale.length;si++){const m=12+o*12+root+scale[si];if(m>=12&&m<=120)pool.push(m);}
-  pool.sort((a,b)=>a-b);const unique=[...new Set(pool)];
-  const need=Math.max(ROWS,COLS)*2;noteMap=[];
-  for(let i=0;i<need;i++)noteMap.push(unique[i%unique.length]);
-  noteMap.reverse();
+  const need=Math.max(ROWS,COLS);
+  let oLo=baseOct,oHi=baseOct+octRange,pool=[];
+  while(true){
+    pool=[];
+    for(let o=oLo;o<=oHi;o++)
+      for(let si=0;si<scale.length;si++){const m=12+o*12+root+scale[si];if(m>=0&&m<=127)pool.push(m);}
+    pool=[...new Set(pool)].sort((a,b)=>a-b);
+    if(pool.length>=need||oLo<=0)break;
+    oLo--; // not enough unique pitches for the row count — extend the range downward
+  }
+  // Take the highest `need` pitches, ordered high→low so row 0 (drawn at the top) is the highest pitch
+  const top=pool.slice(-need);
+  top.reverse();
+  while(top.length<need)top.push(top[top.length-1]??60); // extreme edge case padding
+  noteMap=top;
   buildChordRows();if(currentProg===3)renderEucRows();
 }
 function buildChordRows(){
@@ -3990,6 +4009,40 @@ const PRESETS=[
         {len:4,muted:false,notes:[14,-1,-1,-1],tied:[0,0,0,0]},
         {len:5,muted:false,notes:[11,13,-1,-1,11],tied:[0,0,0,0,0]},
         {len:7,muted:false,notes:[-1,12,7,2,-1,1,-1],tied:[0,0,0,0,0,0,0]},
+      ]}},
+  },
+  {
+    name:'Falling Pentatonic',
+    desc:'Step Seq — fast (145 BPM) F major pentatonic pattern with layered rhythm divisions',
+    data:{version:4,prog:2,bpm:145,clockDiv:4,root:'5',scale:'penta_maj',oct:'4',range:'2',
+      p02:{notes:[
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,4,0,0,0,0,0,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,0,0],
+        [0,4,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,4,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,16,0,0,0,0],
+        [0,0,0,0,4,4,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      ]}},
+  },
+  {
+    name:'Warm Ionian Progression',
+    desc:'Harm. Sequencer — four locked chords (Imaj9 – ♭VI – IVmaj9 – ii9) in a warm major key',
+    data:{version:4,prog:9,bpm:87,clockDiv:1,root:'2',scale:'ionian',oct:'3',range:'3',
+      p09:{slots:[
+        {empty:false,roman:'Imaj9',quality:'maj9',notes:[50,54,57,61,64],duration:32,locked:true,fn:'Generated',tension:0.3,_deg:0},
+        {empty:false,roman:'♭VI',quality:'maj',notes:[59,63,66],entry:{roman:'♭VI',q:'maj',deg:5,ext:''},fn:'Subdominant',_deg:5,duration:32,locked:true,tension:0.4},
+        {empty:false,roman:'IVmaj9',quality:'maj9',notes:[55,59,62,66,69],duration:32,locked:true,fn:'Generated',tension:0.3,_deg:3},
+        {empty:false,roman:'ii9',quality:'min9',notes:[52,55,59,62,66],duration:32,locked:true,fn:'Generated',tension:0.3,_deg:1},
       ]}},
   },
 ];
