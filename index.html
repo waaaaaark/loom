@@ -148,15 +148,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .euc-step.hit:hover{background:var(--accent2);}
 /* drum */
 #drum-grid{display:flex;flex-direction:column;width:100%;overflow-x:auto;}
-.drum-row{display:flex;align-items:center;height:48px;border-bottom:1px solid var(--border2);min-width:0;background:var(--surface);}
+.drum-row{display:flex;align-items:center;height:55px;border-bottom:1px solid var(--border2);min-width:0;background:var(--surface);}
 .drum-row:nth-child(odd){background:var(--surf2);}
 .drum-row.muted{opacity:.4;}
 body.light .drum-row{background:#e8e3dc;}
 body.light .drum-row:nth-child(odd){background:#e0dbd3;}
-.drum-label{width:64px;flex-shrink:0;font-size:10px;color:var(--text);padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;border-right:1px solid var(--border2);height:100%;display:flex;align-items:center;}
+.drum-label{width:74px;flex-shrink:0;font-size:11px;color:var(--text);padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;border-right:1px solid var(--border2);height:100%;display:flex;align-items:center;}
 .drum-label:hover{color:var(--accent);}
 .drum-controls{display:flex;align-items:center;gap:4px;padding:0 6px;flex-shrink:0;border-right:1px solid var(--border2);height:100%;}
-.drum-mute{background:none;border:1px solid var(--border);color:var(--tdim);font-family:var(--mono);font-size:8px;padding:3px 5px;cursor:pointer;letter-spacing:1px;}
+.drum-mute{background:none;border:1px solid var(--border);color:var(--tdim);font-family:var(--mono);font-size:9px;padding:4px 6px;cursor:pointer;letter-spacing:1px;}
 .drum-mute.on{border-color:var(--accent);color:var(--accent);}
 .drum-mute.solo{border-color:var(--accent2);color:var(--accent2);}
 .drum-mute.muted{border-color:#ff4040;color:#ff4040;}
@@ -425,7 +425,14 @@ body.light .dstep.cur{background:#b8b3ac;outline-color:var(--accent);}
           <div class="srow-head"><div class="lbl" title="Delays every other step slightly for a swung feel">Swing</div><div class="val" id="swing-val">0%</div></div>
           <input type="range" id="swing-sl" min="0" max="50" value="0" title="Delays every other step slightly for a swung feel">
         </div>
-        <div style="font-size:9px;color:var(--tdim);line-height:1.5;">Left-click=toggle. Right-click=cycle velocity (full/med/ghost). Click label to rename.</div>
+        <div style="font-size:9px;color:var(--tdim);line-height:1.5;">Left-click=toggle. Right-click=cycle velocity (full/med/ghost) or add a ghost note. Click label to rename.</div>
+        <button class="btn" style="margin-top:6px;" onclick="p04.rewind()" title="Jump every row back to its first step">⏮ Rewind</button>
+        <div class="lbl" style="margin-top:8px;color:var(--tmid);">— Note/Channel Mapping —</div>
+        <div style="font-size:8px;color:var(--tdim);line-height:1.4;margin-bottom:4px;">Save or swap just the per-row note + MIDI channel assignments, independent of the rhythm pattern — e.g. one mapping for GGD, another for a Reaktor kit.</div>
+        <div class="row" style="gap:4px;">
+          <button class="btn" style="flex:1;" onclick="saveDrumMapping()" title="Download the current per-row note/channel assignments">Save Mapping</button>
+          <label class="btn" style="flex:1;text-align:center;cursor:pointer;" title="Load a note/channel mapping, keeping the current rhythm pattern">Load Mapping<input type="file" accept=".json" style="display:none;" onchange="loadDrumMapping(event)"></label>
+        </div>
       </div>
     </div>
   </div>
@@ -975,7 +982,7 @@ function renderEucStepViz(r,el){
 // ═══ PROGRAM 01 — CONWAY ══════════════════════════════════════════════════
 const p01={
   cells:null,divs:null,prev:null,gen:0,dragging:false,drawVal:1,tick32:0,
-  init(){this.cells=new Uint8Array(ROWS*COLS);this.divs=new Uint8Array(ROWS*COLS).fill(4);this.prev=new Uint8Array(ROWS*COLS);this.gen=0;this.tick32=0;this._releaseHeld?.();this._rowHeld=new Map();setCounter('0000','Generation');},
+  init(){this.cells=new Uint8Array(ROWS*COLS);this.divs=new Uint8Array(ROWS*COLS).fill(4);this.prev=new Uint8Array(ROWS*COLS);this.gen=0;this.tick32=0;this._stagnantGens=0;this._genHistory=[];this._releaseHeld?.();this._rowHeld=new Map();setCounter('0000','Generation');},
   divFires(d){const p={1:32,2:16,4:8,8:4,16:2,32:1}[d]||8;return this.tick32%p===0;},
   _noteForCell(r,c){
     // Melodic movement: shift a few scale-steps based on column position, so patterns drifting
@@ -996,6 +1003,17 @@ const p01={
       if(!a&&alive){const nbs=[];for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const nr=r+dr,nc=c+dc;if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&this.cells[nr*COLS+nc])nbs.push(this.divs[nr*COLS+nc]);}if(nbs.length)nd[r*COLS+c]=nbs[Math.floor(nbs.length/2)];}
     }
     this.prev=this.cells.slice();this.cells=next;this.divs=nd;this.gen++;
+    // Detect stagnation: a fixed point (still lifes only) or a period-2 oscillator repeating forever.
+    // Either way the piece stops producing new material, so after enough stagnant generations, drop in a fresh shape.
+    if(!this._genHistory)this._genHistory=[];
+    let hash=0;for(let i=0;i<next.length;i++)hash=(hash*31+next[i])|0;
+    const isRepeat=this._genHistory.includes(hash);
+    this._genHistory.push(hash);if(this._genHistory.length>3)this._genHistory.shift();
+    this._stagnantGens=isRepeat?(this._stagnantGens||0)+1:0;
+    if(this._stagnantGens>=8){
+      this._injectShape();
+      this._stagnantGens=0;this._genHistory=[];
+    }
     setCounter(String(this.gen).padStart(4,'0'),'Generation');
     if(!this._rowHeld)this._rowHeld=new Map(); // row -> notes[] currently sustained (EXPERIMENT state)
     const fired=new Set();
@@ -1061,24 +1079,46 @@ const p01={
     [[0,0],[0,1],[1,0],[1,1],[2,2],[2,3],[3,2],[3,3]], // Beacon (oscillator, period 2)
     [[0,1],[1,2],[2,0],[2,1],[2,2]], // Glider (spaceship)
   ],
+  // Still lifes never change again after placement (silent forever); oscillators and the glider keep
+  // producing new born/death events, so they're weighted higher to keep the piece musically active.
+  _SHAPE_WEIGHTS:[1,1,1,3,3,3,4],
+  _pickWeightedShape(){
+    const total=this._SHAPE_WEIGHTS.reduce((a,b)=>a+b,0);
+    let r=Math.random()*total;
+    for(let i=0;i<this._SHAPES.length;i++){r-=this._SHAPE_WEIGHTS[i];if(r<=0)return this._SHAPES[i];}
+    return this._SHAPES[this._SHAPES.length-1];
+  },
+  _placeShape(shape,r0,c0,div){
+    for(const[dr,dc]of shape){
+      const r=r0+dr,c=c0+dc;
+      if(r>=0&&r<ROWS&&c>=0&&c<COLS){this.cells[r*COLS+c]=1;this.divs[r*COLS+c]=div;}
+    }
+  },
+  _injectShape(){
+    // Auto-reseed: drop a fresh (weighted-random) shape onto the grid without clearing anything else,
+    // used when the pattern has gone stagnant (frozen still life or looping period-2 oscillator).
+    const shape=this._pickWeightedShape();
+    const maxR=Math.max(...shape.map(p=>p[0])),maxC=Math.max(...shape.map(p=>p[1]));
+    const r0=Math.floor(Math.random()*Math.max(1,ROWS-maxR));
+    const c0=Math.floor(Math.random()*Math.max(1,COLS-maxC));
+    const div=[1,2,4,4,4,8,8,16][Math.floor(Math.random()*8)];
+    this._placeShape(shape,r0,c0,div);
+  },
   randomize(){
     this._releaseHeld();
     this.cells.fill(0);this.divs.fill(4);
     const numShapes=Math.max(3,Math.floor((ROWS*COLS)/90));
     for(let s=0;s<numShapes;s++){
-      const shape=this._SHAPES[Math.floor(Math.random()*this._SHAPES.length)];
+      const shape=this._pickWeightedShape();
       const maxR=Math.max(...shape.map(p=>p[0])),maxC=Math.max(...shape.map(p=>p[1]));
       const r0=Math.floor(Math.random()*Math.max(1,ROWS-maxR));
       const c0=Math.floor(Math.random()*Math.max(1,COLS-maxC));
       const div=[1,2,4,4,4,8,8,16][Math.floor(Math.random()*8)];
-      for(const[dr,dc]of shape){
-        const r=r0+dr,c=c0+dc;
-        if(r>=0&&r<ROWS&&c>=0&&c<COLS){this.cells[r*COLS+c]=1;this.divs[r*COLS+c]=div;}
-      }
+      this._placeShape(shape,r0,c0,div);
     }
-    this.prev.fill(0);this.gen=0;setCounter('0000','Generation');this.draw();
+    this.prev.fill(0);this.gen=0;this._stagnantGens=0;this._genHistory=[];setCounter('0000','Generation');this.draw();
   },
-  clear(){this._releaseHeld();this.cells.fill(0);this.divs.fill(4);this.prev.fill(0);this.gen=0;setCounter('0000','Generation');midiAllOff();this.draw();},
+  clear(){this._releaseHeld();this.cells.fill(0);this.divs.fill(4);this.prev.fill(0);this.gen=0;this._stagnantGens=0;this._genHistory=[];setCounter('0000','Generation');midiAllOff();this.draw();},
   draw(){
     if(!ctx)return;ctx.fillStyle='#060604';ctx.fillRect(0,0,canvas.width,canvas.height);
     for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
@@ -1352,13 +1392,14 @@ const p04={
     this.tick32++;
     const hasSolo=this.rows.some(r=>r.solo);
     this.rows.forEach((row,ri)=>{
-      if(row.muted||(hasSolo&&!row.solo))return;
-      // each row advances on its own subdivision
+      const silent=row.muted||(hasSolo&&!row.solo);
+      // each row advances on its own subdivision regardless of mute — keeps it in phase for when it's unmuted
       row.tickAcc=(row.tickAcc||0)+1;
       if(row.tickAcc<(row.subdiv||8))return;
       row.tickAcc=0;
       const s=(row._step||0)%row.stepCount;
       row._step=(row._step||0)+1;
+      if(silent)return; // step advanced above; just don't fire sound while muted/not soloed
       const vel=row.steps[s];
       if(vel>0){
         const v=VEL_MAP[vel]||120,len=parseInt(document.getElementById('len-sl').value);
@@ -1379,6 +1420,7 @@ const p04={
     const dmaxEl=document.getElementById('m-dmax');if(dmaxEl)dmaxEl.textContent=ref?.stepCount||16;
     this._updatePlayhead();
   },
+  rewind(){this.tick32=0;this.rows.forEach(row=>{row._step=0;row.tickAcc=0;});this._updatePlayhead();this.renderGrid();},
   _updatePlayhead(){
     document.querySelectorAll('.dstep').forEach(el=>{
       const ri=parseInt(el.dataset.row),si=parseInt(el.dataset.step);
@@ -1404,7 +1446,7 @@ const p04={
       sb.addEventListener('mousedown',e=>{e.stopPropagation();row.solo=!row.solo;sb.className='drum-mute'+(row.solo?' solo':'');});
       ctrl.appendChild(sb);
       const scl=document.createElement('span');scl.style.cssText='font-size:8px;color:var(--tdim);margin-left:2px;';scl.textContent='n';ctrl.appendChild(scl);
-      const sci=document.createElement('input');sci.type='number';sci.min=1;sci.max=32;sci.value=row.stepCount;sci.title='Number of steps in this row\'s pattern';sci.style.cssText='width:42px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
+      const sci=document.createElement('input');sci.type='number';sci.min=1;sci.max=32;sci.value=row.stepCount;sci.title='Number of steps in this row\'s pattern';sci.style.cssText='width:48px;font-size:10px;padding:2px 3px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
       sci.addEventListener('change',()=>{row.stepCount=Math.max(1,Math.min(32,parseInt(sci.value)||16));sci.value=row.stepCount;this.renderGrid();});
       ctrl.appendChild(sci);
       // Subdivision selector
@@ -1439,11 +1481,11 @@ const p04={
       rowEl.appendChild(stepsEl);
       const nc=document.createElement('div');nc.className='drum-note-ch';
       const nl=document.createElement('span');nl.style.cssText='font-size:8px;color:var(--tdim);';nl.textContent='n';nc.appendChild(nl);
-      const ni=document.createElement('input');ni.type='number';ni.min=0;ni.max=127;ni.value=row.note;ni.title='MIDI note';ni.style.cssText='width:40px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
+      const ni=document.createElement('input');ni.type='number';ni.min=0;ni.max=127;ni.value=row.note;ni.title='MIDI note';ni.style.cssText='width:46px;font-size:10px;padding:2px 3px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);text-align:center;';
       ni.addEventListener('change',()=>{row.note=Math.max(0,Math.min(127,parseInt(ni.value)||36));ni.value=row.note;});
       nc.appendChild(ni);
       const cl=document.createElement('span');cl.style.cssText='font-size:8px;color:var(--tdim);';cl.textContent='ch';nc.appendChild(cl);
-      const cs=document.createElement('select');cs.title='MIDI channel for this drum voice';cs.style.cssText='min-width:38px;font-size:9px;padding:1px 2px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);';
+      const cs=document.createElement('select');cs.title='MIDI channel for this drum voice';cs.style.cssText='min-width:44px;font-size:10px;padding:2px 3px;background:var(--black);border:1px solid var(--border);color:var(--text);font-family:var(--mono);';
       for(let c=0;c<16;c++){const o=document.createElement('option');o.value=c;o.textContent=c+1;if(c===row.ch)o.selected=true;cs.appendChild(o);}
       cs.addEventListener('change',()=>{row.ch=parseInt(cs.value);});nc.appendChild(cs);
       rowEl.appendChild(nc);el.appendChild(rowEl);
@@ -3592,19 +3634,32 @@ function initRegistry(){
 
 function tick32Ms(){return(60000/bpm)/8*clockDiv;}
 
+// Master clock runs in a Web Worker so it isn't throttled when the browser tab loses focus
+// (main-thread setInterval gets throttled to ~1/sec in background tabs; Worker timers are not)
+let _clockWorker=null;
+function _getClockWorker(){
+  if(_clockWorker)return _clockWorker;
+  const code=`let t=null;onmessage=function(e){if(e.data.cmd==='start'){if(t)clearInterval(t);t=setInterval(()=>postMessage('tick'),e.data.ms);}else if(e.data.cmd==='stop'){if(t)clearInterval(t);t=null;}};`;
+  const blob=new Blob([code],{type:'application/javascript'});
+  _clockWorker=new Worker(URL.createObjectURL(blob));
+  return _clockWorker;
+}
 function startT(){
   playing=true;
   const m=MODES[currentProg];
   if(!m)return;
   const ms=m.tickInterval();
   const stepFn=currentProg===1?()=>{m.obj.step();sendMidiClock();}:()=>m.obj.step();
-  ticker=setInterval(stepFn,ms);
+  const worker=_getClockWorker();
+  worker.onmessage=stepFn;
+  worker.postMessage({cmd:'start',ms});
   startMidiClock();sendMidiStart();
   document.getElementById('btn-play').textContent='⏸ Pause';
   document.getElementById('btn-play').classList.add('on');
 }
 function stopT(){
-  playing=false;if(ticker){clearInterval(ticker);ticker=null;}
+  playing=false;
+  if(_clockWorker)_clockWorker.postMessage({cmd:'stop'});
   stopMidiClock();sendMidiStop();
   // Release any sustained notes from modes that hold them
   if(typeof p09!=='undefined'&&p09._releaseActive)p09._releaseActive();
@@ -3777,6 +3832,29 @@ function togglePanel(side){
 }
 
 // ═══ SAVE / LOAD ═══════════════════════════════════════════════════════════
+function saveDrumMapping(){
+  const data={version:1,rows:p04.rows.map(r=>({name:r.name,note:r.note,ch:r.ch}))};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='loom-drum-mapping.json';a.click();
+}
+function loadDrumMapping(evt){
+  const file=evt.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.rows||!Array.isArray(data.rows))throw new Error('bad shape');
+      data.rows.forEach((rd,i)=>{
+        const row=p04.rows[i];if(!row)return;
+        if(rd.note!==undefined)row.note=Math.max(0,Math.min(127,parseInt(rd.note)||row.note));
+        if(rd.ch!==undefined)row.ch=Math.max(0,Math.min(15,parseInt(rd.ch)||row.ch));
+        if(rd.name)row.name=rd.name;
+      });
+      p04.renderGrid();
+    }catch(err){alert('Invalid mapping file.');}
+  };
+  r.readAsText(file);
+  evt.target.value='';
+}
 function savePattern(){
   markClean();
   const data={version:4,prog:currentProg,bpm,clockDiv,
@@ -3789,12 +3867,12 @@ function savePattern(){
     p02:{notes:(p02.notes||[]).map(r=>Array.from(r))},
     p03:{eucState:eucState.map(s=>({k:s.k,n:s.n,muted:s.muted,octShift:s.octShift}))},
     p04:{rows:(p04.rows||[]).map(r=>({...r,steps:Array.from(r.steps)}))},
-    p05:{grids:mgGrids.map(g=>({rows:g.rows,cols:g.cols,cells:Array.from(g.cells),root:g.root,scaleName:g.scaleName,baseOct:g.baseOct,octRange:g.octRange,transpose:g.transpose,dir:g.dir,subdiv:g.subdiv,loopEnd:g.loopEnd,muted:g.muted,midiCh:g.midiCh,collapsed:g.collapsed}))},
+    p05:{grids:mgGrids.map(g=>({rows:g.rows,cols:g.cols,cells:Array.from(g.cells),root:g.root,scaleName:g.scaleName,baseOct:g.baseOct,octRange:g.octRange,transpose:g.transpose,dir:g.dir,subdiv:g.subdiv,loopEnd:g.loopEnd,muted:g.muted,midiCh:g.midiCh,midiOutId:g.midiOutId,collapsed:g.collapsed}))},
     p06:{grid:Array.from(p06.grid||[]),genState:Object.fromEntries(p06.genState||new Map())},
     p07:{lanes:(p07.lanes||[]).map(l=>({len:l.len,muted:l.muted,notes:Array.from(l.notes),tied:Array.from(l.tied||[])}))},
     p08:{cells:Array.from(p08.cells||[]),octaves:Array.from(p08.octaves||[]),rows:ROWS,cols:COLS,
       cursors:(p08.cursors||[]).map(cu=>({row:cu.row,col:cu.col,dx:cu.dx,dy:cu.dy,divider:cu.divider}))},
-    p09:{slots:p09.slots.map(s=>({...s,notes:Array.from(s.notes||[])}))},
+    p09:{slots:p09.slots.map(s=>({...s,notes:Array.from(s.notes||[])})),strumOn:p09.strumOn,sustainOn:p09.sustainOn,looping:p09.looping,numVoices:p09.numVoices,complexity:p09.complexity,chaos:p09.chaos},
   };
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='loom-pattern.json';a.click();
   try{localStorage.setItem('loom_autosave',JSON.stringify(data));}catch(e){}
@@ -3843,7 +3921,7 @@ function applyPattern(data){
     p04.playStep=0;
     p04.maxSteps=Math.max(...p04.rows.map(r=>r.stepCount));
   }
-  if(data.p05&&data.p05.grids){data.p05.grids.forEach((gd,gi)=>{const g=mgGrids[gi];g.resize(gd.rows,gd.cols);g.cells=new Uint8Array(gd.cells);g.root=gd.root;g.scaleName=gd.scaleName;g.baseOct=gd.baseOct;g.octRange=gd.octRange;g.transpose=gd.transpose;g.dir=gd.dir;g.subdiv=gd.subdiv;g.loopEnd=gd.loopEnd;g.muted=gd.muted;g.midiCh=gd.midiCh;g.collapsed=gd.collapsed;g.noteMap=buildGridNoteMap(g.root,g.scaleName,g.baseOct,g.octRange,g.rows);});}
+  if(data.p05&&data.p05.grids){data.p05.grids.forEach((gd,gi)=>{const g=mgGrids[gi];g.resize(gd.rows,gd.cols);g.cells=new Uint8Array(gd.cells);g.root=gd.root;g.scaleName=gd.scaleName;g.baseOct=gd.baseOct;g.octRange=gd.octRange;g.transpose=gd.transpose;g.dir=gd.dir;g.subdiv=gd.subdiv;g.loopEnd=gd.loopEnd;g.muted=gd.muted;g.midiCh=gd.midiCh;g.midiOutId=gd.midiOutId||'';g.collapsed=gd.collapsed;g.noteMap=buildGridNoteMap(g.root,g.scaleName,g.baseOct,g.octRange,g.rows);});p05.buildDOM();}
 
   if(data.p06&&data.p06.grid){
     p06.grid=new Uint8Array(data.p06.grid);
@@ -3881,6 +3959,13 @@ function applyPattern(data){
     }));
     p09.numSlots=p09.slots.length;
     p09.playStep=0;p09.slotTick=0;p09.tick32=0;p09._prevVoicing=null;p09._activeNotes=[];
+    if(data.p09.strumOn!==undefined)p09.strumOn=data.p09.strumOn;
+    if(data.p09.sustainOn!==undefined)p09.sustainOn=data.p09.sustainOn;
+    if(data.p09.looping!==undefined)p09.looping=data.p09.looping;
+    if(data.p09.numVoices!==undefined)p09.numVoices=data.p09.numVoices;
+    if(data.p09.complexity!==undefined)p09.complexity=data.p09.complexity;
+    if(data.p09.chaos!==undefined)p09.chaos=data.p09.chaos;
+    p09._syncUI();
   }
 
 
